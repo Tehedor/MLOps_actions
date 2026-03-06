@@ -13,6 +13,8 @@
 
 # === RAW DATA (controlado SOLO por DVC) ===
 data/
+# ⚠️ PERMITIR ARCHIVOS .dvc en data/ (necesarios para git)
+!data/*.dvc
 
 # entorno
 .venv/
@@ -63,3 +65,7 @@ apps/windows_app/files_output/epoch_processed
 apps/windows_app/files_output/queries
 apps/temporal_app/epoch_processed
 pipeline_lineage.html
+
+# Entorno
+.env
+env.md
