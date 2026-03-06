@@ -1,0 +1,65 @@
+# =====================================================
+# GITIGNORE PARA MLOPS4OFP — FASES, VARIANTES Y DVC
+# =====================================================
+
+# === ARCHIVOS DE SALIDA GLOBALES NO VERSIONADOS ===
+/outputs/
+/local_dvc_store/
+/local_dvc_store/*
+
+# === DVC CACHE (NUNCA subir estos directorios) ===
+/.dvc/cache/
+/.dvc/tmp/
+
+# === RAW DATA (controlado SOLO por DVC) ===
+data/
+
+# entorno
+.venv/
+__pycache__/
+
+# datasets y salidas
+exports/
+*.parquet
+
+# Archivo raw de pruebas
+data/raw_merged.csv
+data/raw.csv
+
+setup/gdrive_credentials.json
+
+# === IGNORAR ARTEFACTOS DE VARIANTES ===
+executions/*/v*/**/*.parquet
+executions/*/v*/**/*.csv
+executions/*/v*/**/*.json
+executions/*/v*/**/*.html
+executions/*/v*/**/figures/
+executions/*/v*/**/reports/
+.executions
+
+# ⚠️ PERMITIR ARCHIVOS .dvc (son ligeros y necesarios)
+!executions/*/v*/*.dvc
+
+# === NOTEBOOKS ANTIGUOS ===
+notebooks-old/*
+
+# === ENTORNOS Y ARCHIVOS DEL SISTEMA ===
+#.venv/
+.DS_Store
+.idea/
+#.vscode/*
+*.log
+__pycache__/
+
+# Credentials
+setup/gdrive-credentials.json
+*.key
+*.pem
+*.p12
+
+
+# Apps
+apps/windows_app/files_output/epoch_processed
+apps/windows_app/files_output/queries
+apps/temporal_app/epoch_processed
+pipeline_lineage.html
