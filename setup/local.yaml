@@ -1,0 +1,26 @@
+# ============================================================
+# MLOps4OFP — Configuración de Setup MODO LOCAL
+# ============================================================
+
+# ------------------------------------------------------------
+# GIT — Control de versiones del código
+# ------------------------------------------------------------
+git:
+  # mode: none
+  # Trabaja solo con Git local, sin remoto.
+  mode: none
+
+# ------------------------------------------------------------
+# DVC — Backend de almacenamiento de datasets y artefactos
+# ============================================================
+dvc:
+  backend: local
+  path: ./.dvc_storage
+
+# ------------------------------------------------------------
+# MLFLOW — Tracking de experimentos
+# ============================================================
+mlflow:
+  enabled: true
+  backend: local
+  tracking_uri: file:./mlruns
