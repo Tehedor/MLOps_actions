@@ -1,0 +1,21 @@
+name: Base Workflow
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  build_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar dependencias
+        run: npm install
+
+  test_job:
+    needs: build_job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Correr tests
+        run: npm testo

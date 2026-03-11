@@ -1,0 +1,72 @@
+name: Build, Test and Store in MinIO
+
+on:
+  push:
+    branches: [ "main" ] # Se ejecuta al hacer push a main
+
+jobs:
+  # ==========================================
+  # FASE 1: BUILD (Compilación y subida rápida)
+  # ==========================================
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        
+      - name: Generar artefacto (Simulación de tu build)
+        run: |
+          mkdir -p dist
+          echo "Aquí iría el binario o código compilado" > dist/app.zip
+          
+      - name: Subir a GitHub Artifacts (Temporal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build-artifact
+          path: dist/
+          retention-days: 1 # Clave: Se borra mañana para no gastar cuota
+
+  # ==========================================
+  # FASE 2: TEST (Pruebas sobre el artefacto)
+  # ==========================================
+  test:
+    needs: build # Espera a que termine la fase 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar artefacto de GitHub
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build-artifact
+          path: dist/ # Lo colocamos en la carpeta dist
+          
+      - name: Ejecutar pruebas (Simulación)
+        run: |
+          echo "Verificando que el archivo existe..."
+          ls -la dist/
+          echo "¡Pruebas superadas con éxito!"
+
+  # ==========================================
+  # FASE 3: RELEASE (Persistencia en MinIO)
+  # ==========================================
+  deploy-to-minio:
+    needs: test # Espera a que las pruebas pasen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar artefacto de GitHub
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build-artifact
+          path: dist/
+          
+      - name: Subir a MinIO (Almacenamiento definitivo)
+        env:
+          # Estas variables se configuran en los Secrets de tu repositorio
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          # S3 requiere una región, pon una por defecto aunque MinIO la ignore
+          AWS_REGION: us-east-1 
+        run: |
+          # Usamos aws s3 cp pasándole tu endpoint personalizado de MinIO
+          # Usamos github.sha para darle un nombre único basado en el commit
+          aws s3 cp dist/app.zip s3://mi-bucket-artefactos/releases/app-${{ github.sha }}.zip \
+            --endpoint-url https://minio.midominio.com
