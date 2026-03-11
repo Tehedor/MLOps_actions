@@ -1,9 +1,9 @@
 name: Base Workflow
 
 on:
-  push:
-    branches:
-      - "**"
+  # push:
+  #   branches:
+  #     - "**"
   pull_request:
 
 jobs:

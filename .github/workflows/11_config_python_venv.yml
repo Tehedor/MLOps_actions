@@ -1,0 +1,57 @@
+name: Setup and Cache Python Environment
+
+on:
+  push:
+    branches: [ "main" ] # Cambia esto a las ramas que quieras trackear
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restaurar o guardar caché del entorno virtual (.venv)
+        id: cache-venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          # El hash asegura que si cambias tus dependencias, se creará una caché nueva.
+          # Asegúrate de tener un requirements.txt, o cambia esto al archivo que maneje tus dependencias (ej: pyproject.toml).
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Crear entorno virtual e instalar dependencias
+        # Este paso SOLO se ejecuta si NO se encontró la caché exacta (cache-hit != true)
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          
+          # Instalación de dependencias base de tu proyecto
+          # Ajusta este comando según cómo manejes tus dependencias
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          
+          # Instalamos pyyaml específicamente porque tu Makefile lo requiere en el setup
+          pip install pyyaml==6.0.1
+
+      - name: Verificar el entorno con tu Makefile
+        run: |
+          # Activamos el entorno para este paso y probamos que el Makefile lo detecta
+          source .venv/bin/activate
+          
+          # Imprimimos la versión para verificar
+          python --version
+          
+          # Opcional: Ejecutar un comando inofensivo de tu Makefile para validar
+          # make help
