@@ -13,8 +13,10 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
       TOKEN_GDRIVE_JSON: ${{ secrets.TOKEN_GDRIVE_JSON }}
+      FASE0_FOLDER_ID: ${{ vars.FASE0_FOLDER_ID }}
+      FASE1_FOLDER_ID: ${{ vars.FASE1_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ vars.FASE2_FOLDER_ID }}
 
     steps:
       - name: Checkout del código
@@ -48,7 +50,7 @@ jobs:
         run: |
           test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
           test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
-          test -n "$FASE0_FOLDER_ID" || (echo "Falta secret FASE0_FOLDER_ID" && exit 1)
+          test -n "$FASE0_FOLDER_ID" || (echo "Falta repository variable FASE0_FOLDER_ID" && exit 1)
           test -n "$TOKEN_GDRIVE_JSON" || (echo "Falta secret TOKEN_GDRIVE_JSON" && exit 1)
 
       # Crea el token.json de GDrive desde el secret, necesario para que DVC
