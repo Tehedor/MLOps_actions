@@ -139,13 +139,13 @@ delete_from_storage_fase1:
 #         # Por defecto muestra el estado
 #         ctrl.status()
 
-DVC_ENGINE := "dvc/dvc_engine-data.py"
+DVC_ENGINE := dvc/dvc_engine-data.py
 
 dvc_setup:
-	. $(PYTHON-A) && \ 
-	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" python $(DVC_ENGINE) setup
+	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) setup
+# 	. $(PYTHON-A) && \ 
+# 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" python $(DVC_ENGINE) setup
 
-# 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) setup
 
 dvc_push:
 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) push

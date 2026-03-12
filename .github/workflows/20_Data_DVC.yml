@@ -27,8 +27,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      # El .venv se crea en la raíz del proyecto.
-      # El Makefile de .mlops_tools lo usa como: PYTHON=../.venv/bin/python3
       - name: Restaurar o guardar caché del .venv
         id: cache-venv
         uses: actions/cache@v4
@@ -46,35 +44,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements2-mlops.txt
 
-      # Añade .venv/bin al PATH global del job para que todos los steps
-      # posteriores puedan usar dvc, python, etc. sin rutas absolutas.
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-
-      - name: Verificacion de paths
-        run: |
-          echo "Contenido del workspace:"
-          ls -la $GITHUB_WORKSPACE
-          echo "Contenido de .venv/bin:"
-          ls -la $GITHUB_WORKSPACE/.venv/bin
 
       - name: Validar secrets requeridos
         run: |
           test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
           test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
-          test -n "$FASE0_FOLDER_ID" || (echo "Falta repository variable FASE0_FOLDER_ID" && exit 1)
+          test -n "$FASE0_FOLDER_ID" || (echo "Falta variable FASE0_FOLDER_ID" && exit 1)
           test -n "$TOKEN_GDRIVE_JSON" || (echo "Falta secret TOKEN_GDRIVE_JSON" && exit 1)
 
-      # Crea el token.json de GDrive desde el secret, necesario para que DVC
-      # pueda autenticarse sin abrir el navegador en el runner limpio.
       - name: Crear token.json de GDrive
         run: |
           printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/token.json
           test -s .mlops_tools/token.json || (echo "token.json vacio" && exit 1)
 
-      # Configura el remote de GDrive en .dvc/config del runner.
-      # Las credenciales vienen de GitHub Secrets (no de .env, que no existe en CI).
-      # load_dotenv() en el script no sobreescribe variables de entorno ya presentes.
       - name: Configurar DVC remote (GDrive)
         working-directory: .mlops_tools
         run: make dvc_setup_fase0
