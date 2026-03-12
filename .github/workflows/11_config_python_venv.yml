@@ -26,7 +26,7 @@ jobs:
           path: .venv
           # El hash asegura que si cambias tus dependencias, se creará una caché nueva.
           # Asegúrate de tener un requirements.txt, o cambia esto al archivo que maneje tus dependencias (ej: pyproject.toml).
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
           restore-keys: |
             ${{ runner.os }}-venv-
 

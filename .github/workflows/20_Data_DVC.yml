@@ -1,0 +1,63 @@
+name: Check If we can download data from DVC
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # El .venv se crea en la raíz del proyecto.
+      # El Makefile de .mlops_tools lo usa como: PYTHON=../.venv/bin/python3
+      - name: Restaurar o guardar caché del .venv
+        id: cache-venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Crear .venv e instalar dependencias
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Configura el remote de GDrive en .dvc/config del runner.
+      # Las credenciales vienen de GitHub Secrets (no de .env, que no existe en CI).
+      # load_dotenv() en el script no sobreescribe variables de entorno ya presentes.
+      - name: Configurar DVC remote (GDrive)
+        working-directory: .mlops_tools
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
+        run: make dvc_setup_fase0 PYTHON=../.venv/bin/python3
+
+      - name: Descargar datos de DVC
+        working-directory: .mlops_tools
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
+        run: make dvc_pull_fase0 PYTHON=../.venv/bin/python3
+
+      - name: Verificar que los datos se descargaron
+        run: |
+          ls -la data
+          wc data/raw.csv
