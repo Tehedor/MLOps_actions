@@ -46,6 +46,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements2-mlops.txt
 
+      # Añade .venv/bin al PATH global del job para que todos los steps
+      # posteriores puedan usar dvc, python, etc. sin rutas absolutas.
+      - name: Añadir .venv/bin al PATH
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+
+      - name: Verificacion de paths
+        run: |
+          echo "Contenido del workspace:"
+          ls -la $GITHUB_WORKSPACE
+          echo "Contenido de .venv/bin:"
+          ls -la $GITHUB_WORKSPACE/.venv/bin
+
       - name: Validar secrets requeridos
         run: |
           test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
