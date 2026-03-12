@@ -3,7 +3,7 @@ SHELL := /bin/bash
 ############################################
 # ENTORNO DE EJECUCIÓN (PIPELINE)
 ############################################
-PYTHON := .venv/bin/python3
+PYTHON := ../.venv/bin/python3
 
 # ifeq ($(OS),Windows_NT)
 # 	PYTHON := .venv/Scripts/python.exe
