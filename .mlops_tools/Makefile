@@ -31,7 +31,7 @@ VARIANT ?=
 MINIO_CTRL_SCRIPT := minio/minio_ctrl.py
 GDRIVE_CTRL_SCRIPT := gdrive/gdrive_ctrl.py
 GDRIVE_CTRL_SERVICE_SCRIPT := gdrive/gdrive_ctrl-service.py
-VARIANT_ENGINE := ${GDRIVE_CTRL_SERVICE_SCRIPT}
+VARIANT_ENGINE := ${GDRIVE_CTRL_SCRIPT}
 
 
 FASE0 := ../data/raw.csv

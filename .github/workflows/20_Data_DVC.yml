@@ -26,7 +26,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
           restore-keys: |
             ${{ runner.os }}-venv-
 
@@ -36,7 +36,15 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements2-mlops.txt
+
+      # Crea el token.json de GDrive desde el secret, necesario para que DVC
+      # pueda autenticarse sin abrir el navegador en el runner limpio.
+      - name: Crear token.json de GDrive
+        run: echo '${{ secrets.TOKEN_GDRIVE_JSON }}' > .mlops_tools/token.json
+
+      - name: check token.json
+        run: cat .mlops_tools/token.json
 
       # Configura el remote de GDrive en .dvc/config del runner.
       # Las credenciales vienen de GitHub Secrets (no de .env, que no existe en CI).
@@ -47,7 +55,7 @@ jobs:
           GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
           GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
-        run: make dvc_setup_fase0 PYTHON=../.venv/bin/python3
+        run: make dvc_setup_fase0
 
       - name: Descargar datos de DVC
         working-directory: .mlops_tools
@@ -55,7 +63,7 @@ jobs:
           GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
           GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
-        run: make dvc_pull_fase0 PYTHON=../.venv/bin/python3
+        run: make dvc_pull_fase0 
 
       - name: Verificar que los datos se descargaron
         run: |
