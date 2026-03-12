@@ -8,7 +8,13 @@ on:
 
 jobs:
   build-and-cache:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    env:
+      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+      FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
+      TOKEN_GDRIVE_JSON: ${{ secrets.TOKEN_GDRIVE_JSON }}
 
     steps:
       - name: Checkout del código
@@ -38,31 +44,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements2-mlops.txt
 
+      - name: Validar secrets requeridos
+        run: |
+          test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
+          test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
+          test -n "$FASE0_FOLDER_ID" || (echo "Falta secret FASE0_FOLDER_ID" && exit 1)
+          test -n "$TOKEN_GDRIVE_JSON" || (echo "Falta secret TOKEN_GDRIVE_JSON" && exit 1)
+
       # Crea el token.json de GDrive desde el secret, necesario para que DVC
       # pueda autenticarse sin abrir el navegador en el runner limpio.
       - name: Crear token.json de GDrive
-        run: echo '${{ secrets.TOKEN_GDRIVE_JSON }}' > .mlops_tools/token.json
-
-      - name: check token.json
-        run: cat .mlops_tools/token.json
+        run: |
+          printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/token.json
+          test -s .mlops_tools/token.json || (echo "token.json vacio" && exit 1)
 
       # Configura el remote de GDrive en .dvc/config del runner.
       # Las credenciales vienen de GitHub Secrets (no de .env, que no existe en CI).
       # load_dotenv() en el script no sobreescribe variables de entorno ya presentes.
       - name: Configurar DVC remote (GDrive)
         working-directory: .mlops_tools
-        env:
-          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
-          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-          FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
         run: make dvc_setup_fase0
 
       - name: Descargar datos de DVC
         working-directory: .mlops_tools
-        env:
-          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
-          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-          FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
         run: make dvc_pull_fase0 
 
       - name: Verificar que los datos se descargaron

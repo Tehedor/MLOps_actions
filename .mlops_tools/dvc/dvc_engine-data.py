@@ -48,7 +48,7 @@ class DVCController:
     def setup(self):
         """Configura Google Drive como remote y aplica las credenciales locales."""
         if not all([self.client_id, self.client_secret, self.remote_folder_id]):
-            print("[ERROR] Faltan variables en el .env (GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET o FASE_FOLDER_ID)")
+            print("[ERROR] Faltan variables de entorno/.env (GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET o FASE{N}_FOLDER_ID)")
             return
 
         print(f"--- Configurando DVC Remote ({self.remote_name}) ---")
