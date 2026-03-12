@@ -4,6 +4,7 @@ SHELL := /bin/bash
 # ENTORNO DE EJECUCIÓN (PIPELINE)
 ############################################
 PYTHON := ../.venv/bin/python3
+PYTHON-A := ../.venv/bin/activate
 
 # ifeq ($(OS),Windows_NT)
 # 	PYTHON := .venv/Scripts/python.exe
@@ -141,7 +142,11 @@ delete_from_storage_fase1:
 DVC_ENGINE := "dvc/dvc_engine-data.py"
 
 dvc_setup:
-	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) setup
+	. $(PYTHON-A) && \ 
+	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" python $(DVC_ENGINE) setup
+
+# 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) setup
+
 dvc_push:
 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) push
 dvc_pull:

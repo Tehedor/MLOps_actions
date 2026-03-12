@@ -19,11 +19,6 @@ class DVCController:
         # 2. Obtener el ID de la carpeta base según la fase (Tu antiguo $F00_DATA)
         folder_env_key = f"FASE{self.fase}_FOLDER_ID"
         self.remote_folder_id = os.getenv(folder_env_key)
-
-        # Usar siempre el binario dvc del mismo venv que ejecuta este script.
-        self.dvc_cmd = os.path.join(os.path.dirname(sys.executable), "dvc")
-        if not os.path.exists(self.dvc_cmd):
-            self.dvc_cmd = "dvc"
         
         self.remote_name = "myremote" + self.fase 
 
@@ -60,17 +55,17 @@ class DVCController:
         
         # 1. Añadir el remote (equivalente a: dvc remote add -d myremote gdrive://ID)
         # Usamos --force por si el remote ya existe, para sobreescribirlo sin dar error
-        cmd_add = f"{self.dvc_cmd} remote add {self.remote_name} gdrive://{self.remote_folder_id}"
+        cmd_add = f"dvc remote add {self.remote_name} gdrive://{self.remote_folder_id}"
         print(f"> {cmd_add}")
         self._run_command(cmd_add)
 
         # 2. Inyectar Client ID en config.local
-        cmd_client = f"{self.dvc_cmd} remote modify --local {self.remote_name} gdrive_client_id {self.client_id}"
+        cmd_client = f"dvc remote modify --local {self.remote_name} gdrive_client_id {self.client_id}"
         print(f"> {cmd_client}")
         self._run_command(cmd_client)
 
         # 3. Inyectar Client Secret en config.local
-        cmd_secret = f"{self.dvc_cmd} remote modify --local {self.remote_name} gdrive_client_secret {self.client_secret}"
+        cmd_secret = f"dvc remote modify --local {self.remote_name} gdrive_client_secret {self.client_secret}"
         print(f"> {cmd_secret}")
         self._run_command(cmd_secret)
 
@@ -79,21 +74,21 @@ class DVCController:
     def push(self):
         """Sube los datos cacheados al remote configurado."""
         print("--- Iniciando DVC PUSH ---")
-        cmd_push = f"{self.dvc_cmd} push -r {self.remote_name}"
+        cmd_push = f"dvc push -r {self.remote_name}"
         print(f"> {cmd_push}")
         self._run_command(cmd_push)
 
     def pull(self):
         """Descarga los datos desde el remote configurado."""
         print("--- Iniciando DVC PULL ---")
-        cmd_pull = f"{self.dvc_cmd} pull -r {self.remote_name}"
+        cmd_pull = f"dvc pull -r {self.remote_name}"
         print(f"> {cmd_pull}")
         self._run_command(cmd_pull)
 
     def status(self):
         """Comprueba el estado de los datos (qué falta por subir/bajar)."""
         print("--- Comprobando DVC STATUS ---")
-        cmd_status = f"{self.dvc_cmd} status -r {self.remote_name}"
+        cmd_status = f"dvc status -r {self.remote_name}"
         print(f"> {cmd_status}")
         self._run_command(cmd_status)
 
