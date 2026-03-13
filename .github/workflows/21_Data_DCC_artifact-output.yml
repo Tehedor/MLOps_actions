@@ -31,24 +31,17 @@ jobs:
 
       - name: Crear/validar .venv e instalar dependencias
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ]; then
-            echo "Cache miss: recreando .venv"
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          elif [ ! -x .venv/bin/python ]; then
-            echo "Cache corrupta: .venv/bin/python no existe, recreando .venv"
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
+          if [ -d .venv ] && [ -x .venv/bin/python ]; then
+            echo "Cache valida: .venv reutilizable"
           else
-            echo "Cache hit valido: .venv reutilizable"
+            echo "Recreando .venv..."
+            rm -rf .venv
+            python -m venv .venv
+            .venv/bin/pip install --upgrade pip
+            .venv/bin/pip install -r requirements2-mlops.txt
           fi
+          test -x .venv/bin/python || (echo "ERROR: .venv/bin/python no existe tras setup" && exit 1)
+          echo "Python: $(.venv/bin/python --version)"
 
       - name: Publicar .venv como artifact
         uses: actions/upload-artifact@v4

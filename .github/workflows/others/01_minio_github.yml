@@ -1,8 +1,8 @@
 name: Build, Test and Store in MinIO
 
 on:
-  # push:
-  #   branches: [ "main" ] # Se ejecuta al hacer push a main
+  push:
+    branches: [ "main" ] # Se ejecuta al hacer push a main
   pull_request: # Se ejecuta al abrir un PR
 jobs:
   # ==========================================
