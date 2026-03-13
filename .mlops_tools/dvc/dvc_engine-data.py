@@ -28,22 +28,42 @@ class DVCController:
         print("@@@@@@@@@@@@@@@@@@@@@@@@\n")
 
     def _run_command(self, command):
-        """Método helper para ejecutar comandos de bash en Python y capturar errores."""
-        try:
-            # check=True hace que lance una excepción si falla (vital para CI/CD)
-            subprocess.run(
-                command, 
-                shell=True, 
-                check=True, 
-                text=True,
-                stdout=sys.stdout,
-                stderr=sys.stderr
-            )
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"\n[ERROR] El comando falló con código {e.returncode}: {command}")
-            # Forzar la salida con error para que GitHub Actions marque el paso como fallido
-            sys.exit(e.returncode)
+        """Ejecuta comandos y corta en cuanto detecta OAuth interactivo en CI."""
+        oauth_markers = (
+            "Your browser has been opened to visit:",
+            "accounts.google.com/o/oauth2/auth",
+            "The operation was canceled.",
+        )
+
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+        )
+
+        interactive_oauth_detected = False
+        for line in process.stdout:
+            print(line, end="")
+            if any(marker in line for marker in oauth_markers):
+                interactive_oauth_detected = True
+                break
+
+        if interactive_oauth_detected:
+            process.kill()
+            process.wait()
+            print("\n[ERROR] DVC intentó autenticación interactiva (abrir navegador).")
+            print("[ERROR] Aborta el paso. Revisa token/credenciales de GDrive en CI.")
+            sys.exit(2)
+
+        return_code = process.wait()
+        if return_code != 0:
+            print(f"\n[ERROR] El comando falló con código {return_code}: {command}")
+            sys.exit(return_code)
+
+        return True
 
     def setup(self):
         """Configura Google Drive como remote y aplica las credenciales locales."""
