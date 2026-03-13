@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 # Cargar variables del archivo .env
 load_dotenv()
+MODE_LOCAL = os.getenv('MODE_LOCAL', 'false').lower() == 'true'
 
 class DVCController:
     def __init__(self):
@@ -51,7 +52,7 @@ class DVCController:
                 interactive_oauth_detected = True
                 break
 
-        if interactive_oauth_detected:
+        if interactive_oauth_detected and not MODE_LOCAL:
             process.kill()
             process.wait()
             print("\n[ERROR] DVC intentó autenticación interactiva (abrir navegador).")
@@ -85,6 +86,10 @@ class DVCController:
         print(f"> {cmd_secret}")
         self._run_command(cmd_secret)
 
+            # dvc remote modify myremote0 gdrive_user_credentials_file $GITHUB_WORKSPACE/token.json --local
+        cmd_ctrl_token = f"dvc remote modify --local {self.remote_name} gdrive_user_credentials_file token_dvc.json"
+        print(f"> {cmd_ctrl_token}")
+        self._run_command(cmd_ctrl_token)
         print("¡Configuración de DVC completada con éxito!")
 
     def push(self):

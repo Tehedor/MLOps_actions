@@ -74,5 +74,6 @@ env.md
 # Claves .mlops_tools
 client_secrets.json
 token.json
+token_dvc.json
 service_account.json
 config.local

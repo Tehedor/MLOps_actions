@@ -14,6 +14,7 @@ jobs:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
       TOKEN_GDRIVE_JSON: ${{ secrets.TOKEN_GDRIVE_JSON }}
+      TOKEN_GDRIVE_DVC_JSON : ${{ secrets.TOKEN_GDRIVE_DVC_JSON }}
       FASE0_FOLDER_ID: ${{ vars.FASE0_FOLDER_ID }}
       FASE1_FOLDER_ID: ${{ vars.FASE1_FOLDER_ID }}
       FASE2_FOLDER_ID: ${{ vars.FASE2_FOLDER_ID }}
@@ -58,11 +59,11 @@ jobs:
       - name: Crear token.json de GDrive
         run: |
           # Token de GDrive
-          printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/token.json
+          printf '%s' "$TOKEN_GDRIVE_DVC_JSON" > .mlops_tools/token.json
           test -s .mlops_tools/token.json || (echo "token.json vacio" && exit 1)
-          printf '%s' "$TOKEN_GDRIVE_JSON" > token.json
-          test -s token.json || (echo "token.json vacio" && exit 1)
-          # Token de dvc
+          # printf '%s' "$TOKEN_GDRIVE_JSON" > token.json
+          # test -s token.json || (echo "token.json vacio" && exit 1)
+          # # Token de dvc
           # printf '%s' "$TOKEN_GDRIVE_DVC_JSON" > .mlops_tools/dvc_token.json
           # test -s .mlops_tools/dvc_token.json || (echo "dvc_token.json vacio" && exit 1)
 
