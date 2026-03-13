@@ -53,11 +53,17 @@ jobs:
           test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
           test -n "$FASE0_FOLDER_ID" || (echo "Falta variable FASE0_FOLDER_ID" && exit 1)
           test -n "$TOKEN_GDRIVE_JSON" || (echo "Falta secret TOKEN_GDRIVE_JSON" && exit 1)
+          # test -n "$TOKEN_GDRIVE_DVC_JSON" || (echo "Falta secret TOKEN_GDRIVE_DVC_JSON" && exit 1)
 
       - name: Crear token.json de GDrive
         run: |
+          # Token de GDrive
           printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/token.json
           test -s .mlops_tools/token.json || (echo "token.json vacio" && exit 1)
+          # Token de dvc
+          # printf '%s' "$TOKEN_GDRIVE_DVC_JSON" > .mlops_tools/dvc_token.json
+          # test -s .mlops_tools/dvc_token.json || (echo "dvc_token.json vacio" && exit 1)
+
 
       - name: Configurar DVC remote (GDrive)
         working-directory: .mlops_tools
