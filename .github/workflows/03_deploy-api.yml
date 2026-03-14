@@ -1,0 +1,37 @@
+name: Pipeline Controlada por API Externa
+
+# 1. Configuramos el trigger para llamadas externas
+on:
+  repository_dispatch:
+    # Puedes definir nombres de eventos personalizados. 
+    # Esto te permite tener varios triggers diferentes desde tu app externa.
+    types: [ejecutar-fase-api]
+
+# 2. Definimos los jobs (fases) de la pipeline
+jobs:
+  debug-body:
+    name: Mostrar body completo recibido
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo del body (client_payload)
+        run: echo '${{ toJSON(github.event.client_payload) }}'
+
+  fase-construccion:
+    # 3. La clave está en el 'if': Solo se ejecutará si en el body mandamos fase = "build" (o "todas")
+    if: github.event.client_payload.fase == 'build' || github.event.client_payload.fase == 'todas'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      
+      # 4. Usamos la variable 'modo' que también enviaremos en el body
+      - name: Construir la API
+        run: echo "Construyendo la API REST en modo... ${{ github.event.client_payload.modo }}"
+
+  fase-despliegue:
+    # Este job solo se ejecuta si mandamos fase = "deploy" (o "todas")
+    if: github.event.client_payload.fase == 'deploy' || github.event.client_payload.fase == 'todas'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar la API
+        run: echo "Desplegando usando la configuración: ${{ github.event.client_payload.modo }}"2

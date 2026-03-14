@@ -1,0 +1,12 @@
+curl -X POST https://api.github.com/repos/Tehedor/MLOps_actions/dispatches \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "Authorization: Bearer github_pat_${TOKEN_FINE_GRAINED_AQUI}" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -d '{
+    "event_type": "ejecutar-fase-api",
+    "client_payload": {
+      "fase": "todas",
+      "modo": "produccion",
+      "mensaje_debug": "Probando que el job debug-body funciona"
+    }
+  }'
