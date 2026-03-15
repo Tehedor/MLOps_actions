@@ -1,4 +1,4 @@
-name: Pipeline Controlada por API Externa
+name: Pipeline Controlada por API Externa.
 
 # 1. Configuramos el trigger para llamadas externas
 on:
