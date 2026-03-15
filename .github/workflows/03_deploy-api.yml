@@ -1,4 +1,4 @@
-name: Pipeline Controlada por API Externa.
+name: Pipeline Controlada por API Externa
 
 # 1. Configuramos el trigger para llamadas externas
 on:
@@ -17,8 +17,8 @@ jobs:
         run: echo '${{ toJSON(github.event.client_payload) }}'
 
   fase-construccion:
-    # 3. La clave está en el 'if': Solo se ejecutará si en el body mandamos fase = "build" (o "todas")
-    if: github.event.client_payload.fase == 'build' || github.event.client_payload.fase == 'todas'
+    # 3. Encapsulamos la condición completa en ${{ }} por seguridad
+    if: ${{ github.event.client_payload.fase == 'build' || github.event.client_payload.fase == 'todas' }}
     runs-on: ubuntu-latest
     steps:
       - name: Descargar código
@@ -30,8 +30,9 @@ jobs:
 
   fase-despliegue:
     # Este job solo se ejecuta si mandamos fase = "deploy" (o "todas")
-    if: github.event.client_payload.fase == 'deploy' || github.event.client_payload.fase == 'todas'
+    if: ${{ github.event.client_payload.fase == 'deploy' || github.event.client_payload.fase == 'todas' }}
     runs-on: ubuntu-latest
     steps:
       - name: Desplegar la API
-        run: echo "Desplegando usando la configuración: ${{ github.event.client_payload.modo }}"
+        run: |
+          echo "Desplegando usando la configuración: ${{ github.event.client_payload.modo }}"
