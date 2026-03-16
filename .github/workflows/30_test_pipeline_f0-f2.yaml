@@ -14,33 +14,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python 3.11 y caché de pip
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: '**/requirements2-mlops.txt'
 
-      - name: Restaurar o guardar caché del .venv
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Crear o validar .venv e instalar dependencias
+      - name: Crear .venv e instalar dependencias (rápido)
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
-            echo "Caché no encontrada o corrupta. Recreando .venv..."
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          else
-            echo "Caché hit válido: .venv restaurado y operativo."
-          fi
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements2-mlops.txt
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -62,33 +48,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python 3.11 y caché de pip
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: '**/requirements2-mlops.txt'
 
-      - name: Restaurar o guardar caché del .venv
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Crear o validar .venv e instalar dependencias
+      - name: Crear .venv e instalar dependencias (rápido)
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
-            echo "Caché no encontrada o corrupta. Recreando .venv..."
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          else
-            echo "Caché hit válido: .venv restaurado y operativo."
-          fi
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements2-mlops.txt
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -139,33 +111,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python 3.11 y caché de pip
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: '**/requirements2-mlops.txt'
 
-      - name: Restaurar o guardar caché del .venv
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Crear o validar .venv e instalar dependencias
+      - name: Crear .venv e instalar dependencias (rápido)
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
-            echo "Caché no encontrada o corrupta. Recreando .venv..."
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          else
-            echo "Caché hit válido: .venv restaurado y operativo."
-          fi
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements2-mlops.txt
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -177,7 +135,6 @@ jobs:
           path: data/raw.csv
 
       - name: Crear variante Fase 1
-        # working-directory: $GITHUB_WORKSPACE
         run: make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
 
       - name: Subir resultados de la variante
@@ -195,33 +152,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python 3.11 y caché de pip
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: '**/requirements2-mlops.txt'
 
-      - name: Restaurar o guardar caché del .venv
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Crear o validar .venv e instalar dependencias
+      - name: Crear .venv e instalar dependencias (rápido)
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
-            echo "Caché no encontrada o corrupta. Recreando .venv..."
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          else
-            echo "Caché hit válido: .venv restaurado y operativo."
-          fi
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements2-mlops.txt
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -233,14 +176,13 @@ jobs:
           path: executions/01_explore/v001/
 
       - name: Ejecutar script de Fase 1
-        working-directory: .mlops_tools
         run: make script1-run VARIANT=v001
 
       - name: Subir ejecución de Fase 1
         uses: actions/upload-artifact@v4
         with:
           name: run-v001-results
-          path: .mlops_tools/v001/
+          path: executions/01_explore/v001/
           retention-days: 1
 
   fase1_check:
@@ -251,33 +193,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python 3.11 y caché de pip
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: '**/requirements2-mlops.txt'
 
-      - name: Restaurar o guardar caché del .venv
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Crear o validar .venv e instalar dependencias
+      - name: Crear .venv e instalar dependencias (rápido)
         run: |
-          set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
-            echo "Caché no encontrada o corrupta. Recreando .venv..."
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          else
-            echo "Caché hit válido: .venv restaurado y operativo."
-          fi
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements2-mlops.txt
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -286,8 +214,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: run-v001-results
-          path: .mlops_tools/v001/
+          path: executions/01_explore/v001/
 
       - name: Verificar resultados de Fase 1
-        working-directory: .mlops_tools
+        working-directory: executions/01_explore/v001/
         run: make script1-check-results VARIANT=v001
