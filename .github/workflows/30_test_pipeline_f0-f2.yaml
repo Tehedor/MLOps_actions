@@ -1,4 +1,4 @@
-name: cache Data DVC por 
+name: Pipeline MLOps - DVC y Fases
 
 on:
   push:
@@ -10,7 +10,6 @@ jobs:
   prepare-environment:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -29,26 +28,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-venv-
 
-      - name: Crear/validar .venv e instalar dependencias
+      - name: Crear o validar .venv e instalar dependencias
         run: |
           set -e
-          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ]; then
-            echo "Cache miss: recreando .venv"
-            rm -rf .venv
-            python -m venv .venv
-            source .venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install -r requirements2-mlops.txt
-          elif [ ! -x .venv/bin/python ]; then
-            echo "Cache corrupta: .venv/bin/python no existe, recreando .venv"
+          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
+            echo "Caché no encontrada o corrupta. Recreando .venv..."
             rm -rf .venv
             python -m venv .venv
             source .venv/bin/activate
             python -m pip install --upgrade pip
             pip install -r requirements2-mlops.txt
           else
-            echo "Cache hit valido: .venv reutilizable"
+            echo "Caché hit válido: .venv restaurado y operativo."
           fi
+
+      - name: Añadir .venv/bin al PATH
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
   dvc-check:
     needs: prepare-environment
@@ -63,7 +58,6 @@ jobs:
       FASE0_FOLDER_ID: ${{ vars.FASE0_FOLDER_ID }}
       FASE1_FOLDER_ID: ${{ vars.FASE1_FOLDER_ID }}
       FASE2_FOLDER_ID: ${{ vars.FASE2_FOLDER_ID }}
-
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -73,7 +67,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Restaurar caché del .venv
+      - name: Restaurar o guardar caché del .venv
         id: cache-venv
         uses: actions/cache@v4
         with:
@@ -82,12 +76,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-venv-
 
-      - name: Validar .venv restaurado
+      - name: Crear o validar .venv e instalar dependencias
         run: |
-          if [ ! -x .venv/bin/python ]; then
-            echo "No se encontro .venv/bin/python en este job"
-            echo "Revisa la cache o vuelve a ejecutar para regenerarla"
-            exit 1
+          set -e
+          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
+            echo "Caché no encontrada o corrupta. Recreando .venv..."
+            rm -rf .venv
+            python -m venv .venv
+            source .venv/bin/activate
+            python -m pip install --upgrade pip
+            pip install -r requirements2-mlops.txt
+          else
+            echo "Caché hit válido: .venv restaurado y operativo."
           fi
 
       - name: Añadir .venv/bin al PATH
@@ -102,18 +102,14 @@ jobs:
 
       - name: Crear token.json de GDrive
         run: |
-          # Token para DVC (debe coincidir con dvc_engine-data.py)
           printf '%s' "$TOKEN_GDRIVE_DVC_JSON" > .mlops_tools/credentials/dvc_token.json
           test -s .mlops_tools/credentials/dvc_token.json || (echo "token_dvc.json vacio" && exit 1)
           
-          # Token para GDRIVE (debe coincidir con gdrive_ctrl.py)
           printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/credentials/gdrive_token.json
           test -s .mlops_tools/credentials/gdrive_token.json || (echo "token_gdrive.json vacio" && exit 1)
           
-          # Credenciales de ACCOUNT SERVICE 
           printf '%s' "$G_DRIVE_SERVICE_ACCOUNT_JSON" > .mlops_tools/credentials/service_account.json
           test -s .mlops_tools/credentials/service_account.json || (echo "service_account.json vacio" && exit 1)
-
 
       - name: Configurar DVC remote (GDrive)
         working-directory: .mlops_tools
@@ -128,12 +124,11 @@ jobs:
           ls -la data
           wc data/raw.csv
 
-# --- NUEVO PASO ---
       - name: Subir raw.csv como Artifact
         uses: actions/upload-artifact@v4
         with:
           name: raw-data
-          path: data/ # Se subirá toda la carpeta data/ (incluyendo raw.csv)
+          path: data/
           retention-days: 1
 
   fase1_variant:
@@ -149,16 +144,32 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Restaurar caché del .venv
+      - name: Restaurar o guardar caché del .venv
+        id: cache-venv
         uses: actions/cache@v4
         with:
           path: .venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Crear o validar .venv e instalar dependencias
+        run: |
+          set -e
+          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
+            echo "Caché no encontrada o corrupta. Recreando .venv..."
+            rm -rf .venv
+            python -m venv .venv
+            source .venv/bin/activate
+            python -m pip install --upgrade pip
+            pip install -r requirements2-mlops.txt
+          else
+            echo "Caché hit válido: .venv restaurado y operativo."
+          fi
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      # Descargamos el data/raw.csv del job anterior
       - name: Descargar Artifact de datos raw
         uses: actions/download-artifact@v4
         with:
@@ -167,15 +178,12 @@ jobs:
 
       - name: Crear variante Fase 1
         working-directory: .mlops_tools
-        # Ojo: si estás en .mlops_tools, la ruta a data suele ser ../data/raw.csv
         run: make variant1 VARIANT=v001 RAW=../data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
 
-      # Subimos el resultado de este paso para el siguiente
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
         with:
           name: variant-v001-data
-          # IMPORTANTE: Cambia esta ruta a la carpeta donde tu makefile guarde los resultados de variant1
           path: .mlops_tools/v001/ 
           retention-days: 1
 
@@ -192,16 +200,32 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Restaurar caché del .venv
+      - name: Restaurar o guardar caché del .venv
+        id: cache-venv
         uses: actions/cache@v4
         with:
           path: .venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Crear o validar .venv e instalar dependencias
+        run: |
+          set -e
+          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
+            echo "Caché no encontrada o corrupta. Recreando .venv..."
+            rm -rf .venv
+            python -m venv .venv
+            source .venv/bin/activate
+            python -m pip install --upgrade pip
+            pip install -r requirements2-mlops.txt
+          else
+            echo "Caché hit válido: .venv restaurado y operativo."
+          fi
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      # Descargamos los datos que generó fase1_variant
       - name: Descargar Artifact de la variante
         uses: actions/download-artifact@v4
         with:
@@ -212,7 +236,6 @@ jobs:
         working-directory: .mlops_tools
         run: make script1-run VARIANT=v001
 
-      # Volvemos a subir los datos actualizados (modelos, métricas, etc.)
       - name: Subir ejecución de Fase 1
         uses: actions/upload-artifact@v4
         with:
@@ -233,16 +256,32 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Restaurar caché del .venv
+      - name: Restaurar o guardar caché del .venv
+        id: cache-venv
         uses: actions/cache@v4
         with:
           path: .venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements2-mlops.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Crear o validar .venv e instalar dependencias
+        run: |
+          set -e
+          if [ "${{ steps.cache-venv.outputs.cache-hit }}" != "true" ] || [ ! -x .venv/bin/python ]; then
+            echo "Caché no encontrada o corrupta. Recreando .venv..."
+            rm -rf .venv
+            python -m venv .venv
+            source .venv/bin/activate
+            python -m pip install --upgrade pip
+            pip install -r requirements2-mlops.txt
+          else
+            echo "Caché hit válido: .venv restaurado y operativo."
+          fi
 
       - name: Añadir .venv/bin al PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      # Descargamos los resultados finales para hacer el check
       - name: Descargar resultados de Fase 1
         uses: actions/download-artifact@v4
         with:
