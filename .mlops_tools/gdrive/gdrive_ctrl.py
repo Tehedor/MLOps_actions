@@ -17,6 +17,8 @@ load_dotenv()
 # Permisos requeridos para leer, escribir y borrar en Drive
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
+TOKEN_DVC_PATH_NAME = os.getenv('DVC_TOKEN_PATH', 'credentials/gdrive_token.json')
+
 class GDriveController:
     def __init__(self):
         # 1. Configuración de credenciales de Drive
@@ -45,9 +47,9 @@ class GDriveController:
     def _authenticate(self):
         """Maneja la autenticación OAuth2 construyendo el cliente desde las variables de entorno."""
         creds = None
-        # token.json almacena los tokens de acceso y actualización del usuario
-        if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        # token_drive.json almacena los tokens de acceso y actualización del usuario
+        if os.path.exists(TOKEN_DVC_PATH_NAME):
+            creds = Credentials.from_authorized_user_file(TOKEN_DVC_PATH_NAME, SCOPES)
             
         # Si no hay credenciales válidas, que el usuario se loguee
         if not creds or not creds.valid:
@@ -67,7 +69,7 @@ class GDriveController:
                 creds = flow.run_local_server(port=0)
                 
             # Guardamos las credenciales para la próxima ejecución
-            with open('token.json', 'w') as token:
+            with open(TOKEN_DVC_PATH_NAME, 'w') as token:
                 token.write(creds.to_json())
 
         return build('drive', 'v3', credentials=creds)

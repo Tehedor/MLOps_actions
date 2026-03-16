@@ -1,0 +1,76 @@
+# .github/workflows/mlops-pipeline.yml
+name: MLOps Pipeline Orchestrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_variants:
+        description: 'Variantes a ejecutar (ej. ["v302", "v401"])'
+        required: true
+        default: '["v101"]'
+
+jobs:
+
+  debug-body:
+    name: Mostrar body completo recibido
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo del body (client_payload)
+        run: echo '${{ toJSON(github.event.client_payload) }}'
+
+  planner:
+    runs-on: ubuntu-latest
+    outputs:
+      # Exportamos el JSON que generará nuestro script de Python
+      f01_matrix: ${{ steps.plan.outputs.f01 }}
+      f02_matrix: ${{ steps.plan.outputs.f02 }}
+      f03_matrix: ${{ steps.plan.outputs.f03 }}
+      # ... (hasta f07)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generar Plan de Ejecución
+        id: plan
+        # Este script lee la petición, parsea dependencias y escupe JSONs.
+        # Además, aquí defines si la variante necesita un 'self-hosted' runner.
+        run: python scripts/planner.py '${{ github.event.inputs.target_variants }}'
+
+
+f01_explore:
+    needs: planner
+    if: ${{ needs.planner.outputs.f01_matrix != '[]' && needs.planner.outputs.f01_matrix != '' }}
+    strategy:
+      matrix:
+        variant: ${{ fromJson(needs.planner.outputs.f01_matrix) }}
+      fail-fast: false # Si falla v100, que v101 siga ejecutándose
+      
+    # ¡Magia! Si tu planner determinó que necesita RAM, se va al servidor tuyo.
+    runs-on: ${{ matrix.variant.runner }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: (f0) Setup DVC & Pull Parent Data
+        run: |
+          pip install -r requirements.txt
+          # Traer solo datos necesarios (si aplica)
+          dvc pull data/01-raw/raw.csv 
+          
+      - name: (f10) Make variant (Register in Bucket)
+        run: |
+          # Avisar al bucket de que esta variante está "In Progress"
+          python scripts/bucket_manager.py register --phase 01 --variant ${{ matrix.variant.id }}
+          
+      - name: (f11) Ejecutar Variant
+        run: make script01-run VARIANT=${{ matrix.variant.id }}
+        
+      - name: (f121-p) Preparar Artifacts
+        run: echo "Limpiando logs o moviendo ficheros temporales"
+        
+      - name: (f122-p) Guardar en Bucket y DVC Push
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
+          # etc...
+        run: |
+          dvc add executions/01_explore/${{ matrix.variant.id }}
+          dvc push
+          python scripts/bucket_manager.py complete --phase 01 --variant ${{ matrix.variant.id }}

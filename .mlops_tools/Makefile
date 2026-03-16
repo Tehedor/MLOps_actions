@@ -6,21 +6,6 @@ SHELL := /bin/bash
 PYTHON := ../.venv/bin/python3
 PYTHON-A := ../.venv/bin/activate
 
-# ifeq ($(OS),Windows_NT)
-# 	PYTHON := .venv/Scripts/python.exe
-# 	DVC := .venv/Scripts/dvc.exe
-# 	JUPYTER := .venv/Scripts/jupyter.exe
-# else
-# 	ifneq ("$(wildcard .venv/bin/python3)","")
-# 		DVC := .venv/bin/dvc
-# 		JUPYTER := .venv/bin/jupyter
-# 	else
-# 		PYTHON := python3
-# 		DVC := dvc
-# 		JUPYTER := jupyter
-# 	endif
-# endif
-
 $(info [INFO] Usando interprete Python en venv: $(PYTHON))
 
 ############################################
@@ -86,6 +71,8 @@ push_to_storage_fase1:
 pull_from_storage:
 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" VARIANT="$(VARIANT)" $(PYTHON) $(VARIANT_ENGINE) pull
 
+
+# make pull_from_storage_fase1 VARIANT=v100
 pull_from_storage_fase1:
 # 	@$(MAKE) check_artifact_fase1
 	@$(MAKE) pull_from_storage FASE=1 FASE_URLS="$(FASE1)" VARIANT="$(VARIANT)"
@@ -118,28 +105,8 @@ delete_from_storage_fase1:
 # dvc_start:
 # 	dvc init
 
-
-# if __name__ == "__main__":
-#     ctrl = DVCController()
-    
-#     if len(sys.argv) > 1:
-#         comando = sys.argv[1].lower()
-#         if comando == "setup":
-#             ctrl.setup()
-#         elif comando == "push":
-#             ctrl.push()
-#         elif comando == "pull":
-#             ctrl.pull()
-#         elif comando == "status":
-#             ctrl.status()
-#         else:
-#             print(f"Comando desconocido: {comando}")
-#             print("Comandos disponibles: setup, push, pull, status")
-#     else:
-#         # Por defecto muestra el estado
-#         ctrl.status()
-
 DVC_ENGINE := dvc/dvc_engine-data.py
+# DVC_ENGINE := dvc/dvc_engine-data-AccountService.py
 
 dvc_setup:
 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" $(PYTHON) $(DVC_ENGINE) setup
@@ -163,3 +130,5 @@ dvc_pull_fase0:
 	@$(MAKE) dvc_pull FASE=0 FASE_URLS="$(FASE0)" 
 dvc_status_fase0:
 	@$(MAKE) dvc_status FASE=0 FASE_URLS="$(FASE0)"
+
+

@@ -16,10 +16,13 @@ load_dotenv()
 # Permisos requeridos para leer, escribir y borrar en Drive
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
+GOOGLE_ACCOUNT_SERVICE_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', './credentials/service_account.json')
+
+
 class GDriveController:
     def __init__(self):
         # 1. Configuración de credenciales de la Cuenta de Servicio
-        self.credentials_file = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        self.credentials_file = GOOGLE_ACCOUNT_SERVICE_CREDENTIALS
         
         # Variables de contexto
         self.variant = os.getenv('VARIANT')

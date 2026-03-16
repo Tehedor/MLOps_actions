@@ -1,17 +1,20 @@
+import json
 import os
+import shlex
 import sys
 import subprocess
 from dotenv import load_dotenv
 
 # Cargar variables del archivo .env
 load_dotenv()
-TOKEN_DVC_PATH_NAME = os.getenv('DVC_TOKEN_PATH', 'credentials/dvc_token.json')
+
+GOOGLE_ACCOUNT_SERVICE_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', './credentials/service_account.json')
 
 class DVCController:
     def __init__(self):
         # 1. Configuración de credenciales
-        self.client_id = os.getenv('GDRIVE_CLIENT_ID')
-        self.client_secret = os.getenv('GDRIVE_CLIENT_SECRET')
+        self.credentials_file = GOOGLE_ACCOUNT_SERVICE_CREDENTIALS
+        self.service_account_user_email = None
         
         # Variables de contexto
         # Por defecto errror si no existe
@@ -23,6 +26,9 @@ class DVCController:
         # 2. Obtener el ID de la carpeta base según la fase
         folder_env_key = f"FASE{self.fase}_FOLDER_ID"
         self.remote_folder_id = os.getenv(folder_env_key)
+
+        if self.credentials_file:
+            self.credentials_file = os.path.abspath(self.credentials_file)
         
         # Generar nombre del remote dinámico
         self.remote_name = "myremote" + self.fase 
@@ -70,11 +76,36 @@ class DVCController:
 
         return True
 
-    def setup(self):
-        """Configura Google Drive como remote y aplica las credenciales locales."""
-        if not all([self.client_id, self.client_secret, self.remote_folder_id]):
-            print("[ERROR] Faltan variables de entorno (GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET o FASE_FOLDER_ID)")
+    def _load_service_account_email(self):
+        """Obtiene el email de la cuenta de servicio desde el JSON de credenciales."""
+        try:
+            with open(self.credentials_file, encoding='utf-8') as credentials_file:
+                credentials_data = json.load(credentials_file)
+        except OSError as exc:
+            print(f"[ERROR] No se pudo leer el archivo de credenciales: {exc}")
             sys.exit(1)
+        except json.JSONDecodeError as exc:
+            print(f"[ERROR] El archivo de credenciales no contiene JSON válido: {exc}")
+            sys.exit(1)
+
+        service_account_email = credentials_data.get('client_email')
+        if not service_account_email:
+            print("[ERROR] El archivo de credenciales no incluye el campo client_email")
+            sys.exit(1)
+
+        return service_account_email
+
+    def setup(self):
+        """Configura Google Drive como remote usando una cuenta de servicio."""
+        if not all([self.credentials_file, self.remote_folder_id]):
+            print("[ERROR] Faltan variables de entorno (GOOGLE_APPLICATION_CREDENTIALS o FASE_FOLDER_ID)")
+            sys.exit(1)
+
+        if not os.path.exists(self.credentials_file):
+            print(f"[ERROR] No se encontró el archivo de credenciales: {self.credentials_file}")
+            sys.exit(1)
+
+        self.service_account_user_email = self._load_service_account_email()
 
         print(f"--- Configurando DVC Remote ({self.remote_name}) ---")
         
@@ -82,26 +113,28 @@ class DVCController:
         print(f"> {cmd_add}")
         self._run_command(cmd_add)
 
+        cmd_use_service_account = (
+            f"dvc remote modify --local {self.remote_name} "
+            "gdrive_use_service_account true"
+        )
+        print(f"> {cmd_use_service_account}")
+        self._run_command(cmd_use_service_account)
 
-        # cmd_use_service_account = (
-        #     f"dvc remote modify --local {self.remote_name} "
-        #     "gdrive_use_service_account true"
-        # )
-        # print(f"> {cmd_use_service_account}")
-        # self._run_command(cmd_use_service_account)
+        cmd_service_account_file = (
+            f"dvc remote modify --local {self.remote_name} "
+            f"gdrive_service_account_json_file_path {shlex.quote(self.credentials_file)}"
+        )
+        print(f"> {cmd_service_account_file}")
+        self._run_command(cmd_service_account_file)
 
-        cmd_client = f"dvc remote modify --local {self.remote_name} gdrive_client_id {self.client_id}"
-        print(f"> {cmd_client}")
-        self._run_command(cmd_client)
+        if self.service_account_user_email:
+            cmd_user_email = (
+                f"dvc remote modify --local {self.remote_name} "
+                f"gdrive_service_account_user_email {shlex.quote(self.service_account_user_email)}"
+            )
+            print(f"> {cmd_user_email}")
+            self._run_command(cmd_user_email)
 
-        cmd_secret = f"dvc remote modify --local {self.remote_name} gdrive_client_secret {self.client_secret}"
-        print(f"> {cmd_secret}")
-        self._run_command(cmd_secret)
-
-            # dvc remote modify myremote0 gdrive_user_credentials_file $GITHUB_WORKSPACE/token.json --local
-        cmd_ctrl_token = f"dvc remote modify --local {self.remote_name} gdrive_user_credentials_file {TOKEN_DVC_PATH_NAME}"
-        print(f"> {cmd_ctrl_token}")
-        self._run_command(cmd_ctrl_token)
         print("¡Configuración de DVC completada con éxito!")
 
     def push(self):
