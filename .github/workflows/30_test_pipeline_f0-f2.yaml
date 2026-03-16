@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: raw-data
-          path: data/
+          path: data/raw.csv
           retention-days: 1
 
   fase1_variant:
@@ -174,17 +174,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: raw-data
-          path: data/
+          path: data/raw.csv
 
       - name: Crear variante Fase 1
-        working-directory: .mlops_tools
-        run: make variant1 VARIANT=v001 RAW=../data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+        # working-directory: $GITHUB_WORKSPACE
+        run: make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
 
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
         with:
           name: variant-v001-data
-          path: .mlops_tools/v001/ 
+          path: executions/01_explore/v001/ 
           retention-days: 1
 
   fase1_run:
@@ -230,7 +230,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: variant-v001-data
-          path: .mlops_tools/v001/
+          path: executions/01_explore/v001/
 
       - name: Ejecutar script de Fase 1
         working-directory: .mlops_tools
