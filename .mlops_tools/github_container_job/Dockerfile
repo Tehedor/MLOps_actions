@@ -1,4 +1,4 @@
-# GitHub Container Registry (GHCR)*
+# GitHub Container Registry (GHCR)
 # Usamos una versión ligera de Python 3.11
 FROM python:3.11-slim
 
@@ -23,3 +23,8 @@ RUN pip install --upgrade pip && \
 
 # El comando por defecto al arrancar el contenedor será bash
 CMD ["/bin/bash"]
+
+
+
+# docker build -f .mlops_tools/github_container_job/Dockerfile -t test-env .
+# docker run -it --rm test-env /bin/bash

@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 
 # Cargar variables del archivo .env
 load_dotenv()
-TOKEN_DVC_PATH_NAME = os.getenv('DVC_TOKEN_PATH', 'credentials/dvc_token.json')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_TOKEN_DVC_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'credentials', 'dvc_token.json'))
+TOKEN_DVC_PATH_NAME = os.path.abspath(os.getenv('DVC_TOKEN_PATH', DEFAULT_TOKEN_DVC_PATH))
 
 class DVCController:
     def __init__(self):
