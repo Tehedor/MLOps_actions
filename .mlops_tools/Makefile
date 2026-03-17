@@ -3,7 +3,8 @@ SHELL := /bin/bash
 ############################################
 # ENTORNO DE EJECUCIÓN (PIPELINE)
 ############################################
-PYTHON := ../.venv/bin/python3
+# PYTHON := ../.venv/bin/python3
+PYTHON := python3
 PYTHON-A := ../.venv/bin/activate
 
 $(info [INFO] Usando interprete Python en venv: $(PYTHON))

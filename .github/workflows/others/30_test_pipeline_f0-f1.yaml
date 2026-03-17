@@ -103,7 +103,7 @@ jobs:
           path: data/raw.csv
           retention-days: 1
 
-  fase1_variant:
+  fase1:
     needs: dvc-check
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -143,38 +143,6 @@ jobs:
           name: variant-v001-data
           path: executions/01_explore/v001/ 
           retention-days: 1
-
-  fase1_run:
-    needs: fase1_variant
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
-
-      - name: Configurar Python 3.11 y caché de pip
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-          cache-dependency-path: '**/requirements2-mlops.txt'
-
-      - name: Crear .venv e instalar dependencias (rápido)
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r requirements2-mlops.txt
-
-      - name: Añadir .venv/bin al PATH
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-
-      - name: Descargar Artifact de la variante
-        uses: actions/download-artifact@v4
-        with:
-          name: variant-v001-data
-          path: executions/01_explore/v001/
-
       - name: Ejecutar script de Fase 1
         run: make script1-run VARIANT=v001
 
@@ -185,37 +153,7 @@ jobs:
           path: executions/01_explore/v001/
           retention-days: 1
 
-  fase1_check:
-    needs: fase1_run
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
-
-      - name: Configurar Python 3.11 y caché de pip
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-          cache-dependency-path: '**/requirements2-mlops.txt'
-
-      - name: Crear .venv e instalar dependencias (rápido)
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r requirements2-mlops.txt
-
-      - name: Añadir .venv/bin al PATH
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-
-      - name: Descargar resultados de Fase 1
-        uses: actions/download-artifact@v4
-        with:
-          name: run-v001-results
-          path: executions/01_explore/v001/
-
       - name: Verificar resultados de Fase 1
         working-directory: executions/01_explore/v001/
         run: make script1-check-results VARIANT=v001
+

@@ -9,3 +9,11 @@ make script2-check-results VARIANT=v011
 make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=preserve
 make script3-run VARIANT=v111
 make script3-check-results VARIANT=v111
+
+make variant4 VARIANT=v201 PARENT=v111  PREDICTION_NAME=name OBJECTIVE="{operator: OR, events: [GRID_OVERVOLTAGE, INVERTER_FAULT]}"
+make script4-run VARIANT=v201
+make script4-check-results VARIANT=v201
+
+make variant5 VARIANT=v111 PARENT=v101 MODEL_FAMILY=dense_bow IMBALANCE_STRATEGY=rare_events IMBALANCE_MAX_MAJ=20000
+make script5-run VARIANT=v301
+make script5-check-results VARIANT=v301
