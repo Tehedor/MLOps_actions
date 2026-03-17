@@ -108,7 +108,6 @@ jobs:
           retention-days: 1
 
       - name: Verificar resultados de Fase 1
-        working-directory: executions/01_explore/v001/
         run: make script1-check-results VARIANT=v001
 
 
