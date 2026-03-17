@@ -35,7 +35,7 @@ jobs:
         run: python scripts/planner.py '${{ github.event.inputs.target_variants }}'
 
 
-f01_explore:
+  f01_explore:
     needs: planner
     if: ${{ needs.planner.outputs.f01_matrix != '[]' && needs.planner.outputs.f01_matrix != '' }}
     strategy:

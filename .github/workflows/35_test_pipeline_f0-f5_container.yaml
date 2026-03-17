@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # <--- ESTO ES LA CLAVE. Descarga el historial completo de Git.
 
       - name: Validar secrets requeridos
         run: |
