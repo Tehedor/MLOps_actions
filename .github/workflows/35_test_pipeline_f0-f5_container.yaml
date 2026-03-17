@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 jobs:
-  dvc-check:
+  dvc-data-download:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
@@ -67,7 +67,7 @@ jobs:
           retention-days: 1
 
   fase1:
-    needs: dvc-check
+    needs: dvc-data-download
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
