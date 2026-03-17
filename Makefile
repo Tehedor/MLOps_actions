@@ -98,21 +98,21 @@ clean-setup:
 # ENTORNO DE EJECUCIÓN (PIPELINE)
 ############################################
 
-ifeq ($(OS),Windows_NT)
-PYTHON := .venv/Scripts/python.exe
-DVC := .venv/Scripts/dvc.exe
-JUPYTER := .venv/Scripts/jupyter.exe
-else
-ifneq ("$(wildcard .venv/bin/python3)","")
-PYTHON := .venv/bin/python3
-DVC := .venv/bin/dvc
-JUPYTER := .venv/bin/jupyter
-else
+# ifeq ($(OS),Windows_NT)
+# PYTHON := .venv/Scripts/python.exe
+# DVC := .venv/Scripts/dvc.exe
+# JUPYTER := .venv/Scripts/jupyter.exe
+# else
+# ifneq ("$(wildcard .venv/bin/python3)","")
+# PYTHON := .venv/bin/python3
+# DVC := .venv/bin/dvc
+# JUPYTER := .venv/bin/jupyter
+# else
 PYTHON := python3
 DVC := dvc
 JUPYTER := jupyter
-endif
-endif
+# endif
+# endif
 
 $(info [INFO] Usando interprete Python en venv: $(PYTHON))
 
