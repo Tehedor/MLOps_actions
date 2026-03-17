@@ -61,6 +61,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Usa la caché de GitHub Actions para que construir el Docker sea más rápido
+          # Usa la caché de GitHub Actions para que construir el Docker sea más rápidoo
           cache-from: type=gha
           cache-to: type=gha,mode=max
