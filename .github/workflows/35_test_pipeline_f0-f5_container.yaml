@@ -11,7 +11,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -115,7 +115,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -163,7 +163,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -211,7 +211,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -260,7 +260,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/mlops-env:latest
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
