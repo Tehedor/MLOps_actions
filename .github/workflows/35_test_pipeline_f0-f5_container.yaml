@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: raw-data
-          path: data/raw.csv
+          path: data/
           retention-days: 1
 
   fase1:
@@ -85,7 +85,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: raw-data
-          path: data/raw.csv
+          path: data/
 
       - name: Crear variante Fase 1
         run: make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
