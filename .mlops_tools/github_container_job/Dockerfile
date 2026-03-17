@@ -1,4 +1,4 @@
-# GitHub Container Registry (GHCR)
+# GitHub Container Registry (GHCR)*
 # Usamos una versión ligera de Python 3.11
 FROM python:3.11-slim
 
