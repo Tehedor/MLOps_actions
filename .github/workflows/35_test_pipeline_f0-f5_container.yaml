@@ -1,4 +1,4 @@
-name: Pipeline MLOps - DVC y Fases
+name: Pipeline MLOps - DVC y Fasess
 
 on:
   push:
