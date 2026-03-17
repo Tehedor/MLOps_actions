@@ -128,7 +128,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: variant-f1v001-variants 
-          path: executions/01_explore/variants.yaml
+          path: executions/01_explore/
 
       - name: Descargar Artifact de fase 1
         uses: actions/download-artifact@v4
@@ -176,7 +176,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: variant-f2v011-variants
-          path: executions/02_prepareeventsds/variants.yaml
+          path: executions/02_prepareeventsds/
 
       - name: Descargar Artifact de fase 2
         uses: actions/download-artifact@v4
@@ -224,7 +224,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: variant-f3v111-variants
-          path: executions/03_preparewindowsds/variants.yaml
+          path: executions/03_preparewindowsds/
 
       - name: Descargar Artifact de fase 3
         uses: actions/download-artifact@v4
@@ -273,7 +273,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: variant-f4v201-variants
-          path: executions/04_targetengineering/variants.yaml
+          path: executions/04_targetengineering/
 
       - name: Descargar Artifact de fase 4
         uses: actions/download-artifact@v4
