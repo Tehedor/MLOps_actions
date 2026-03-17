@@ -8,6 +8,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Instalamos 'make' a nivel de sistema operativo (ya que lo usas mucho en tu pipeline)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     make \
     && rm -rf /var/lib/apt/lists/*
 
