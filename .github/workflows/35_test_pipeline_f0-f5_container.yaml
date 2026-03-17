@@ -94,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: variant-f1v001-variants
-          path: executions/01_explore/v001/variants.yaml 
+          path: executions/01_explore/variants.yaml 
           retention-days: 1
       
       - name: Ejecutar script de Fase 1
