@@ -764,7 +764,8 @@ script4-check-results: check-variant-format
 	$(MAKE) check-results-generic PHASE=$(PHASE4) VARIANTS_DIR=$(VARIANTS_DIR_04) \
 		VARIANT=$(VARIANT) CHECK_FILES="04_targetengineering_dataset.parquet \
 		04_targetengineering_metadata.json 04_targetengineering_params.json \
-		04_targetengineering_report.html"
+		04_targetengineering_summary.json"
+# 		04_targetengineering_report.html"
 
 
 
