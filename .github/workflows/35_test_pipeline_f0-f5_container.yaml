@@ -137,7 +137,7 @@ jobs:
           path: executions/01_explore/v001/
 
       - name: Crear variante Fase 2
-        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=both NAN=keep
+        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=transitions NAN=discard
 
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
@@ -185,7 +185,7 @@ jobs:
           path: executions/02_prepareeventsds/v011/
       
       - name: Crear variante Fase 3
-        run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=preserve
+        run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard
         
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
