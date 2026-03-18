@@ -138,6 +138,7 @@ jobs:
 
       - name: Crear variante Fase 2
         run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=transitions NAN=discard
+        # run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=transitions NAN=keep
 
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
@@ -186,6 +187,7 @@ jobs:
       
       - name: Crear variante Fase 3
         run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard
+        # run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=preserve
         
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
@@ -194,8 +196,32 @@ jobs:
           path: executions/03_preparewindowsds/variants.yaml
           retention-days: 1
 
-      - name: Ejecutar script de Fase 3
-        run: make script3-run VARIANT=v111
+      # - name: Ejecutar script de Fase 3
+      #   run: make script3-run VARIANT=v111
+
+      - name: Ejecutar script de Fase 3 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1 # Fuerza a Python a escupir todo el log si el sistema lo mata
+        run: |
+          # 1. Lanzamos un bucle en segundo plano que imprima la RAM cada 10 segundos
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          
+          # 2. Ejecutamos tu script normal
+          make script3-run VARIANT=v111
+          
+          # 3. Si termina bien, matamos el monitor de RAM
+          kill $MONITOR_PID
+
+      - name: Diagnóstico de error (Solo si falla)
+        if: failure() # Esto hace que SOLO se ejecute si el paso anterior peta
+        run: |
+          echo "==== BUSCANDO ERRORES DE OUT OF MEMORY (OOM) ===="
+          # Intentamos leer el dmesg del host (puede requerir privilegios en LXC)
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          
+          echo "==== ESTADO FINAL DE LA MEMORIA ===="
+          free -m
 
       - name: Subir ejecución de Fase 3
         uses: actions/upload-artifact@v4
@@ -220,6 +246,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+
+      - name: Descargar Artifact de fase 2 variants
+        uses: actions/download-artifact@v4
+        with:
+          name: variant-f2v011-variants
+          path: executions/02_prepareeventsds/
+
+      - name: Descargar Artifact de fase 2
+        uses: actions/download-artifact@v4
+        with:
+          name: run-f2v011-results
+          path: executions/02_prepareeventsds/v011/
+
       - name: Descargar Artifact de fase 3 variants
         uses: actions/download-artifact@v4
         with:
@@ -243,8 +282,31 @@ jobs:
           path: executions/04_targetengineering/variants.yaml
           retention-days: 1
       
-      - name: Ejecutar script de Fase 4
-        run: make script4-run VARIANT=v201
+      # - name: Ejecutar script de Fase 4
+      #   run: make script4-run VARIANT=v201
+      - name: Ejecutar script de Fase 3 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1 # Fuerza a Python a escupir todo el log si el sistema lo mata
+        run: |
+          # 1. Lanzamos un bucle en segundo plano que imprima la RAM cada 10 segundos
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          
+          # 2. Ejecutamos tu script normal
+          make script4-run VARIANT=v201
+          
+          # 3. Si termina bien, matamos el monitor de RAM
+          kill $MONITOR_PID
+
+      - name: Diagnóstico de error (Solo si falla)
+        if: failure() # Esto hace que SOLO se ejecute si el paso anterior peta
+        run: |
+          echo "==== BUSCANDO ERRORES DE OUT OF MEMORY (OOM) ===="
+          # Intentamos leer el dmesg del host (puede requerir privilegios en LXC)
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          
+          echo "==== ESTADO FINAL DE LA MEMORIA ===="
+          free -m
 
       - name: Subir ejecución de Fase 4
         uses: actions/upload-artifact@v4
