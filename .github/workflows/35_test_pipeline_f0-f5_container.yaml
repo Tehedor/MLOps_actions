@@ -274,6 +274,60 @@ jobs:
       - name: Crear variante Fase 4
         run: |
           make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=name OBJECTIVE="{operator: OR, events: [GRID_OVERVOLTAGE, INVERTER_FAULT]}"
+
+      - name: Validar objetivo Fase 4 contra catálogo Fase 2
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          try:
+            import yaml
+          except ImportError:
+            print("[ERROR] PyYAML no está instalado en la imagen.")
+            sys.exit(1)
+
+          catalog_path = Path("executions/02_prepareeventsds/v011/02_prepareeventsds_event_catalog.json")
+          params_path = Path("executions/04_targetengineering/v201/params.yaml")
+
+          if not catalog_path.exists():
+            print(f"[ERROR] No existe catálogo F02: {catalog_path}")
+            sys.exit(1)
+
+          if not params_path.exists():
+            print(f"[ERROR] No existe params de F04: {params_path}")
+            sys.exit(1)
+
+          with catalog_path.open("r", encoding="utf-8") as f:
+            catalog = json.load(f)
+
+          with params_path.open("r", encoding="utf-8") as f:
+            params = yaml.safe_load(f) or {}
+
+          objective = params.get("prediction_objective", {})
+          events = objective.get("events", [])
+
+          print(f"[INFO] Eventos en catálogo F02: {len(catalog)}")
+          sample = list(catalog.keys())[:20]
+          print("[INFO] Ejemplos de eventos válidos del catálogo:")
+          for ev in sample:
+            print(f"  - {ev}")
+
+          print("[INFO] Eventos pedidos por F04:")
+          for ev in events:
+            print(f"  - {ev}")
+
+          missing = [ev for ev in events if ev not in catalog]
+          if missing:
+            print("[ERROR] Hay eventos del objetivo que no existen en el catálogo F02:")
+            for ev in missing:
+              print(f"  - {ev}")
+            print("[SUGERENCIA] Usa nombres de eventos que existan en executions/02_prepareeventsds/v011/02_prepareeventsds_event_catalog.json")
+            sys.exit(1)
+
+          print("[OK] Todos los eventos objetivo existen en el catálogo F02.")
+          PY
       
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
