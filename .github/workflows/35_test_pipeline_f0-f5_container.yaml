@@ -137,8 +137,8 @@ jobs:
           path: executions/01_explore/v001/
 
       - name: Crear variante Fase 2
-        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=transitions NAN=discard
-        # run: make variant2 VARIANT=v011 PARENT=v001 BANDS="10 25 50 75 90" STRATEGY=transitions NAN=keep
+        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
+        # run: make variant2 VARIANT=v011 PARENT=v001 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=keep
 
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
@@ -338,7 +338,7 @@ jobs:
       
       # - name: Ejecutar script de Fase 4
       #   run: make script4-run VARIANT=v201
-      - name: Ejecutar script de Fase 3 (Con monitor de RAM)
+      - name: Ejecutar script de Fase 4 (Con monitor de RAM)
         env:
           PYTHONFAULTHANDLER: 1 # Fuerza a Python a escupir todo el log si el sistema lo mata
         run: |
