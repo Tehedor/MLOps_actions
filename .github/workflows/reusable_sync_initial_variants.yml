@@ -7,6 +7,20 @@ on:
         required: true
       GDRIVE_CLIENT_SECRET:
         required: true
+      FASE1_FOLDER_ID:
+        required: true
+      FASE2_FOLDER_ID:
+        required: true
+      FASE3_FOLDER_ID:
+        required: true
+      FASE4_FOLDER_ID:
+        required: true
+      FASE5_FOLDER_ID:
+        required: true
+      FASE6_FOLDER_ID:
+        required: false
+      FASE7_FOLDER_ID:
+        required: false
 
 jobs:
   sync-initial-variants:
@@ -19,9 +33,26 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+      FASE1_FOLDER_ID: ${{ secrets.FASE1_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ secrets.FASE2_FOLDER_ID }}
+      FASE3_FOLDER_ID: ${{ secrets.FASE3_FOLDER_ID }}
+      FASE4_FOLDER_ID: ${{ secrets.FASE4_FOLDER_ID }}
+      FASE5_FOLDER_ID: ${{ secrets.FASE5_FOLDER_ID }}
+      FASE6_FOLDER_ID: ${{ secrets.FASE6_FOLDER_ID }}
+      FASE7_FOLDER_ID: ${{ secrets.FASE7_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+
+      - name: Validar configuración mínima
+        run: |
+          test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
+          test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
+          test -n "$FASE1_FOLDER_ID" || (echo "Falta secret FASE1_FOLDER_ID" && exit 1)
+          test -n "$FASE2_FOLDER_ID" || (echo "Falta secret FASE2_FOLDER_ID" && exit 1)
+          test -n "$FASE3_FOLDER_ID" || (echo "Falta secret FASE3_FOLDER_ID" && exit 1)
+          test -n "$FASE4_FOLDER_ID" || (echo "Falta secret FASE4_FOLDER_ID" && exit 1)
+          test -n "$FASE5_FOLDER_ID" || (echo "Falta secret FASE5_FOLDER_ID" && exit 1)
 
       - name: Descargar credenciales de GDrive
         uses: actions/download-artifact@v4
@@ -31,23 +62,48 @@ jobs:
 
       - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 1 → GDrive"
         working-directory: .mlops_tools
-        run: make push_variant_to_storage_fase1 || echo "[WARN] No se encontró variants.yaml en F1"
+        run: |
+          if [ -f ../executions/01_explore/variants.yaml ]; then
+            make push_variant_to_storage_fase1
+          else
+            echo "[WARN] No se encontró variants.yaml en F1"
+          fi
 
       - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 2 → GDrive"
         working-directory: .mlops_tools
-        run: make push_variant_to_storage_fase2 || echo "[WARN] No se encontró variants.yaml en F2"
+        run: |
+          if [ -f ../executions/02_prepareeventsds/variants.yaml ]; then
+            make push_variant_to_storage_fase2
+          else
+            echo "[WARN] No se encontró variants.yaml en F2"
+          fi
 
       - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 3 → GDrive"
         working-directory: .mlops_tools
-        run: make push_variant_to_storage_fase3 || echo "[WARN] No se encontró variants.yaml en F3"
+        run: |
+          if [ -f ../executions/03_preparewindowsds/variants.yaml ]; then
+            make push_variant_to_storage_fase3
+          else
+            echo "[WARN] No se encontró variants.yaml en F3"
+          fi
 
       - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 4 → GDrive"
         working-directory: .mlops_tools
-        run: make push_variant_to_storage_fase4 || echo "[WARN] No se encontró variants.yaml en F4"
+        run: |
+          if [ -f ../executions/04_targetengineering/variants.yaml ]; then
+            make push_variant_to_storage_fase4
+          else
+            echo "[WARN] No se encontró variants.yaml en F4"
+          fi
 
       - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 5 → GDrive"
         working-directory: .mlops_tools
-        run: make push_variant_to_storage_fase5 || echo "[WARN] No se encontró variants.yaml en F5"
+        run: |
+          if [ -f ../executions/05_modeling/variants.yaml ]; then
+            make push_variant_to_storage_fase5
+          else
+            echo "[WARN] No se encontró variants.yaml en F5"
+          fi
 
       - name: "[✓] Sincronización inicial completada"
         run: echo "Todos los variants.yaml han sido sincronizados con GDrive"

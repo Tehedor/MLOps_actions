@@ -25,6 +25,13 @@ jobs:
     secrets:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+      FASE1_FOLDER_ID: ${{ secrets.FASE1_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ secrets.FASE2_FOLDER_ID }}
+      FASE3_FOLDER_ID: ${{ secrets.FASE3_FOLDER_ID }}
+      FASE4_FOLDER_ID: ${{ secrets.FASE4_FOLDER_ID }}
+      FASE5_FOLDER_ID: ${{ secrets.FASE5_FOLDER_ID }}
+      FASE6_FOLDER_ID: ${{ secrets.FASE6_FOLDER_ID }}
+      FASE7_FOLDER_ID: ${{ secrets.FASE7_FOLDER_ID }}
 
   fase0-fase1:
     needs: init-gdrive
@@ -65,12 +72,12 @@ jobs:
           ls -la data
           wc data/raw.csv
 
-      - name: Subir raw.csv como Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: raw-data
-          path: data/
-          retention-days: 1
+      # - name: Subir raw.csv como Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: raw-data
+      #     path: data/
+      #     retention-days: 1
 
       - name: Pull variants de la fase 1 (Si existen)
         working-directory: .mlops_tools

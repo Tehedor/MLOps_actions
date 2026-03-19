@@ -193,3 +193,9 @@ dvc_status_fase0:
 	@$(MAKE) dvc_status FASE=0 FASE_URLS="$(FASE0)"
 
 
+
+
+
+upload_secrets:
+	@cd .. && \
+	python .mlops_tools/githubActionsVars/upload_variables.py

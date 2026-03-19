@@ -71,6 +71,8 @@ pipeline_lineage.html
 .env
 env.md
 
+.env-gfolders
+
 # Claves .mlops_tools
 client_secrets.json
 token.json
