@@ -45,8 +45,8 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE0_FOLDER_ID: ${{ vars.FASE0_FOLDER_ID }}
-      FASE1_FOLDER_ID: ${{ vars.FASE1_FOLDER_ID }}
+      FASE0_FOLDER_ID: ${{ secrets.FASE0_FOLDER_ID }}
+      FASE1_FOLDER_ID: ${{ secrets.FASE1_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -136,8 +136,8 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE1_FOLDER_ID: ${{ vars.FASE1_FOLDER_ID }}
-      FASE2_FOLDER_ID: ${{ vars.FASE2_FOLDER_ID }}
+      FASE1_FOLDER_ID: ${{ secrets.FASE1_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ secrets.FASE2_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -223,8 +223,8 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE2_FOLDER_ID: ${{ vars.FASE2_FOLDER_ID }}
-      FASE3_FOLDER_ID: ${{ vars.FASE3_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ secrets.FASE2_FOLDER_ID }}
+      FASE3_FOLDER_ID: ${{ secrets.FASE3_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -335,8 +335,8 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE3_FOLDER_ID: ${{ vars.FASE3_FOLDER_ID }}
-      FASE4_FOLDER_ID: ${{ vars.FASE4_FOLDER_ID }}
+      FASE3_FOLDER_ID: ${{ secrets.FASE3_FOLDER_ID }}
+      FASE4_FOLDER_ID: ${{ secrets.FASE4_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -512,8 +512,8 @@ jobs:
     env:
       GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
       GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      FASE4_FOLDER_ID: ${{ vars.FASE4_FOLDER_ID }}
-      FASE5_FOLDER_ID: ${{ vars.FASE5_FOLDER_ID }}
+      FASE4_FOLDER_ID: ${{ secrets.FASE4_FOLDER_ID }}
+      FASE5_FOLDER_ID: ${{ secrets.FASE5_FOLDER_ID }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
