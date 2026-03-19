@@ -1,0 +1,52 @@
+name: Sync Phase Variants
+
+on:
+  workflow_call:
+    inputs:
+      fase:
+        required: true
+        type: string
+        description: 'Phase number (e.g., 1, 2, 3)'
+      mode:
+        required: true
+        type: string
+        description: 'Operation mode: pull-variant, push-variant, or both'
+    secrets:
+      GDRIVE_CLIENT_ID:
+        required: true
+      GDRIVE_CLIENT_SECRET:
+        required: true
+
+jobs:
+  sync-variants:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Descargar credenciales de GDrive
+        uses: actions/download-artifact@v4
+        with:
+          name: gdrive-credentials
+          path: .mlops_tools/credentials/
+
+      - name: Pull variantes de la fase (si existe)
+        if: inputs.mode == 'pull-variant' || inputs.mode == 'both'
+        working-directory: .mlops_tools
+        run: |
+          FASE="${{ inputs.fase }}" FASE_URLS="../executions/0${{ inputs.fase }}_*" $(python3 -c "import os; paths = [p for p in os.listdir('.') if p.startswith('0') and os.path.isdir(p)]; print(paths[0] if paths else '')" | xargs -I {} bash -c 'cd {} 2>/dev/null && pwd || echo ""') \
+          make pull_variant_from_storage_fase${{ inputs.fase }} || echo "[WARN] No se encontraron variantes remotas para la fase"
+
+      - name: Push variantes de la fase (si existe)
+        if: inputs.mode == 'push-variant' || inputs.mode == 'both'
+        working-directory: .mlops_tools
+        run: |
+          make push_variant_to_storage_fase${{ inputs.fase }}

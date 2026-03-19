@@ -38,10 +38,14 @@ FASE7 := ../executions/07_deployrun
 	check_artifact_fase1 \
 	push_to_storage \
 	push_to_storage_fase1 \
+	push_variant_to_storage \
+	push_variant_to_storage_fase1 \
 	push_to_storgage \
 	push_to_storgage_fase1 \
 	pull_from_storage \
-	pull_from_storage_fase1
+	pull_from_storage_fase1 \
+	pull_variant_from_storage \
+	pull_variant_from_storage_fase1
 
 
 check_artifact: 
@@ -68,25 +72,81 @@ push_to_storage_fase1:
 # 	@$(MAKE) check_artifact_fase1
 	@$(MAKE) push_to_storage FASE=1 FASE_URLS="$(FASE1)" VARIANT="$(VARIANT)"
 
+push_to_storage_fase2:
+	@$(MAKE) push_to_storage FASE=2 FASE_URLS="$(FASE2)" VARIANT="$(VARIANT)"
+
+push_to_storage_fase3:
+	@$(MAKE) push_to_storage FASE=3 FASE_URLS="$(FASE3)" VARIANT="$(VARIANT)"
+
+push_to_storage_fase4:
+	@$(MAKE) push_to_storage FASE=4 FASE_URLS="$(FASE4)" VARIANT="$(VARIANT)"
+
+push_to_storage_fase5:
+	@$(MAKE) push_to_storage FASE=5 FASE_URLS="$(FASE5)" VARIANT="$(VARIANT)"
+
+
 
 pull_from_storage:
 	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" VARIANT="$(VARIANT)" $(PYTHON) $(VARIANT_ENGINE) pull
-
 
 # make pull_from_storage_fase1 VARIANT=v100
 pull_from_storage_fase1:
 # 	@$(MAKE) check_artifact_fase1
 	@$(MAKE) pull_from_storage FASE=1 FASE_URLS="$(FASE1)" VARIANT="$(VARIANT)"
 
-# Alias por compatibilidad con el typo anterior
-push_to_storgage: push_to_storage
+pull_from_storage_fase2:
+	@$(MAKE) pull_from_storage FASE=2 FASE_URLS="$(FASE2)" VARIANT="$(VARIANT)"
 
-push_to_storgage_fase1: push_to_storage_fase1
+pull_from_storage_fase3:
+	@$(MAKE) pull_from_storage FASE=3 FASE_URLS="$(FASE3)" VARIANT="$(VARIANT)"
+
+pull_from_storage_fase4:
+	@$(MAKE) pull_from_storage FASE=4 FASE_URLS="$(FASE4)" VARIANT="$(VARIANT)"
+
+pull_from_storage_fase5:
+	@$(MAKE) pull_from_storage FASE=5 FASE_URLS="$(FASE5)" VARIANT="$(VARIANT)"
 
 
-pull_from_storage:
+push_variant_to_storage:
+	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" VARIANT="$(VARIANT)" $(PYTHON) $(VARIANT_ENGINE) push-variant
 
-pull_from_storage_fase1:
+# make push_variant_to_storage_fase1
+push_variant_to_storage_fase1:
+	@$(MAKE) push_variant_to_storage FASE=1 FASE_URLS="$(FASE1)"
+
+push_variant_to_storage_fase2:
+	@$(MAKE) push_variant_to_storage FASE=2 FASE_URLS="$(FASE2)"
+
+push_variant_to_storage_fase3:
+	@$(MAKE) push_variant_to_storage FASE=3 FASE_URLS="$(FASE3)"
+
+push_variant_to_storage_fase4:
+	@$(MAKE) push_variant_to_storage FASE=4 FASE_URLS="$(FASE4)"
+
+push_variant_to_storage_fase5:
+	@$(MAKE) push_variant_to_storage FASE=5 FASE_URLS="$(FASE5)"
+
+pull_variant_from_storage:
+	FASE="$(FASE)" FASE_URLS="$(FASE_URLS)" VARIANT="$(VARIANT)" $(PYTHON) $(VARIANT_ENGINE) pull-variant
+
+# make pull_variant_from_storage_fase1
+pull_variant_from_storage_fase1:
+	@$(MAKE) pull_variant_from_storage FASE=1 FASE_URLS="$(FASE1)"
+
+pull_variant_from_storage_fase2:
+	@$(MAKE) pull_variant_from_storage FASE=2 FASE_URLS="$(FASE2)"
+
+pull_variant_from_storage_fase3:
+	@$(MAKE) pull_variant_from_storage FASE=3 FASE_URLS="$(FASE3)"
+
+pull_variant_from_storage_fase4:
+	@$(MAKE) pull_variant_from_storage FASE=4 FASE_URLS="$(FASE4)"
+
+pull_variant_from_storage_fase5:
+	@$(MAKE) pull_variant_from_storage FASE=5 FASE_URLS="$(FASE5)"
+
+
+
 ############################################
 # DELETE
 ############################################

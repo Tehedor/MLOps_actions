@@ -105,6 +105,15 @@ class GDriveController:
                 current_parent_id = self._get_or_create_folder(part, current_parent_id)
         return current_parent_id
 
+    def _find_local_variants_file(self):
+        """Resuelve el archivo local de variantes soportando ambos nombres."""
+        candidates = ["variants.yaml", "variant.yml"]
+        for name in candidates:
+            path = os.path.join(self.fase_urls, name)
+            if os.path.isfile(path):
+                return path
+        return None
+
     # --- COMANDOS PRINCIPALES ---
     def push(self):
         """Sube archivos creando la estructura de carpetas en Drive."""
@@ -147,6 +156,34 @@ class GDriveController:
             print("¡Push finalizado con éxito!")
         except Exception as e:
             print(f"Error en PUSH: {e}")
+
+    def push_variant(self):
+        """Sube variants.yaml (o variant.yml) en la raíz de la carpeta de la fase."""
+        ruta_local = self._find_local_variants_file()
+
+        if not ruta_local:
+            print("No se encontró variants.yaml ni variant.yml en la carpeta de la fase.")
+            return
+
+        file_name = os.path.basename(ruta_local)
+        print(f"--- Iniciando PUSH-VARIANT: {ruta_local} ---")
+
+        try:
+            query = f"name='{file_name}' and '{self.base_folder_id}' in parents and trashed=false"
+            existing = self.service.files().list(q=query, fields='files(id)').execute().get('files', [])
+            media = MediaFileUpload(ruta_local, resumable=True)
+
+            if existing:
+                self.service.files().update(fileId=existing[0]['id'], media_body=media).execute()
+                print(f"  [ACTUALIZADO] {file_name}")
+            else:
+                file_metadata = {'name': file_name, 'parents': [self.base_folder_id]}
+                self.service.files().create(body=file_metadata, media_body=media).execute()
+                print(f"  [SUBIDO] {file_name}")
+
+            print("¡Push-variant finalizado con éxito!")
+        except Exception as e:
+            print(f"Error en PUSH-VARIANT: {e}")
 
     def _download_folder_recursive(self, folder_id, local_path):
         """Descarga todo el contenido de una carpeta de Drive de forma recursiva."""
@@ -203,6 +240,37 @@ class GDriveController:
         except Exception as e:
             print(f"Error en PULL: {e}")
 
+    def pull_variant(self):
+        """Descarga variants.yaml (o variant.yml) desde la raíz de la carpeta de la fase."""
+        candidates = ["variants.yaml", "variant.yml"]
+        print("--- Iniciando PULL-VARIANT ---")
+
+        try:
+            for file_name in candidates:
+                query = f"name='{file_name}' and '{self.base_folder_id}' in parents and trashed=false"
+                items = self.service.files().list(q=query, fields="files(id, name)").execute().get('files', [])
+                if not items:
+                    continue
+
+                item = items[0]
+                local_target = os.path.join(self.fase_urls, item['name'])
+                os.makedirs(os.path.dirname(local_target), exist_ok=True)
+
+                request = self.service.files().get_media(fileId=item['id'])
+                with io.FileIO(local_target, 'wb') as fh:
+                    downloader = MediaIoBaseDownload(fh, request)
+                    done = False
+                    while done is False:
+                        status, done = downloader.next_chunk()
+
+                print(f"  [DESCARGADO] {item['name']}")
+                print("¡Pull-variant finalizado con éxito!")
+                return
+
+            print("No se encontró variants.yaml ni variant.yml en la carpeta de la fase.")
+        except Exception as e:
+            print(f"Error en PULL-VARIANT: {e}")
+
     def delete(self, prefix=None):
         """Elimina la carpeta o archivo que coincida con la variante."""
         prefix = prefix or self.variant
@@ -248,8 +316,12 @@ if __name__ == "__main__":
         comando = sys.argv[1].lower()
         if comando == "push":
             ctrl.push()
+        elif comando == "push-variant":
+            ctrl.push_variant()
         elif comando == "pull":
             ctrl.pull()
+        elif comando == "pull-variant":
+            ctrl.pull_variant()
         elif comando == "delete":
             ctrl.delete()
         elif comando == "list":

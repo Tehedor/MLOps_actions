@@ -1,0 +1,53 @@
+name: Sync Initial Variants to GDrive
+
+on:
+  workflow_call:
+    secrets:
+      GDRIVE_CLIENT_ID:
+        required: true
+      GDRIVE_CLIENT_SECRET:
+        required: true
+
+jobs:
+  sync-initial-variants:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Descargar credenciales de GDrive
+        uses: actions/download-artifact@v4
+        with:
+          name: gdrive-credentials
+          path: .mlops_tools/credentials/
+
+      - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 1 → GDrive"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase1 || echo "[WARN] No se encontró variants.yaml en F1"
+
+      - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 2 → GDrive"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase2 || echo "[WARN] No se encontró variants.yaml en F2"
+
+      - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 3 → GDrive"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase3 || echo "[WARN] No se encontró variants.yaml en F3"
+
+      - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 4 → GDrive"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase4 || echo "[WARN] No se encontró variants.yaml en F4"
+
+      - name: "[INIT-SYNC] Sincronizar variants.yaml Fase 5 → GDrive"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase5 || echo "[WARN] No se encontró variants.yaml en F5"
+
+      - name: "[✓] Sincronización inicial completada"
+        run: echo "Todos los variants.yaml han sido sincronizados con GDrive"

@@ -1,0 +1,57 @@
+name: Prepare GDrive Credentials
+
+on:
+  workflow_call:
+    secrets:
+      GDRIVE_CLIENT_ID:
+        required: true
+      GDRIVE_CLIENT_SECRET:
+        required: true
+      G_DRIVE_SERVICE_ACCOUNT_JSON:
+        required: true
+      TOKEN_GDRIVE_JSON:
+        required: true
+      TOKEN_GDRIVE_DVC_JSON:
+        required: true
+
+jobs:
+  prepare-gdrive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Validar secrets requeridos
+        run: |
+          test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
+          test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
+          test -n "$TOKEN_GDRIVE_DVC_JSON" || (echo "Falta secret TOKEN_GDRIVE_DVC_JSON" && exit 1)
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          TOKEN_GDRIVE_DVC_JSON: ${{ secrets.TOKEN_GDRIVE_DVC_JSON }}
+
+      - name: Crear directorio de credenciales
+        run: mkdir -p .mlops_tools/credentials
+
+      - name: Crear token.json de GDrive
+        run: |
+          printf '%s' "$TOKEN_GDRIVE_DVC_JSON" > .mlops_tools/credentials/dvc_token.json
+          test -s .mlops_tools/credentials/dvc_token.json || (echo "token_dvc.json vacio" && exit 1)
+          
+          printf '%s' "$TOKEN_GDRIVE_JSON" > .mlops_tools/credentials/gdrive_token.json
+          test -s .mlops_tools/credentials/gdrive_token.json || (echo "token_gdrive.json vacio" && exit 1)
+          
+          printf '%s' "$G_DRIVE_SERVICE_ACCOUNT_JSON" > .mlops_tools/credentials/service_account.json
+          test -s .mlops_tools/credentials/service_account.json || (echo "service_account.json vacio" && exit 1)
+        env:
+          TOKEN_GDRIVE_DVC_JSON: ${{ secrets.TOKEN_GDRIVE_DVC_JSON }}
+          TOKEN_GDRIVE_JSON: ${{ secrets.TOKEN_GDRIVE_JSON }}
+          G_DRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.G_DRIVE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Subir credenciales como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdrive-credentials
+          path: .mlops_tools/credentials/
+          retention-days: 1
