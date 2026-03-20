@@ -175,7 +175,7 @@ jobs:
         run: make push_to_storage_fase1 VARIANT=v001
 
       - name: Crear variante Fase 2
-        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
+        run: make variant2 VARIANT=v011 PARENT=v001 BANDS="20 60 80" STRATEGY=transitions NAN=discard
 
       - name: Subir resultados de la variante
         uses: actions/upload-artifact@v4
@@ -387,7 +387,7 @@ jobs:
       
       - name: Crear variante Fase 4
         run: |
-          make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=name OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_5-to-95_100, Battery_Active_Power_5_15-to-95_100, Battery_Active_Power_15_25-to-95_100, Battery_Active_Power_25_35-to-95_100, Battery_Active_Power_35_65-to-95_100, Battery_Active_Power_65_75-to-95_100, Battery_Active_Power_75_85-to-95_100, Battery_Active_Power_85_95-to-95_100]}"
+          make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=molamas OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-95_100, Battery_Active_Power_60_80-to-95_100, Battery_Active_Power_80_95-to-95_100]}"
 
       - name: Validar objetivo Fase 4 contra catálogo Fase 2
         run: |
