@@ -387,7 +387,7 @@ jobs:
       
       - name: Crear variante Fase 4
         run: |
-          make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=molamas OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-95_100, Battery_Active_Power_60_80-to-95_100, Battery_Active_Power_80_95-to-95_100]}"
+          make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=molamas OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-80_100, Battery_Active_Power_60_80-to-80_100]}"
 
       - name: Validar objetivo Fase 4 contra catálogo Fase 2
         run: |
