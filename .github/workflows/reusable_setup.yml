@@ -19,10 +19,14 @@ on:
       - '*'
 
 jobs:
-  ejecutar-fase-2:
+  ejecutar-fase-0:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
     env:
       USE_VENV: 0
       DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
@@ -33,6 +37,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validar workspace
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          pwd
+          ls -la
+          test -f Makefile || (echo "[ERROR] No existe Makefile en el workspace"; exit 1)
 
       - name: 1. Clean setup
         run: make clean-setup
