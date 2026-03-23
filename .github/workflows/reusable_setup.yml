@@ -76,4 +76,7 @@ jobs:
         run: make check-setup
 
       - name: Probar si descarga de DVC funciona
-        run: dvc pull -R data/raw
+        run: dvc pull data/raw.csv.dvc
+
+      - name: Ver si esta todo el datset
+        run: ls -la data/raw.csv
