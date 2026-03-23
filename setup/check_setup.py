@@ -24,6 +24,11 @@ def ok(msg):
 
 
 def check_venv():
+    use_venv = os.environ.get("MLOPS_USE_VENV", "1") == "1"
+    if not use_venv:
+        ok("Modo system Python activo (MLOPS_USE_VENV=0): no se requiere .venv")
+        return
+
     venv = ROOT / ".venv"
     if not venv.exists():
         fail(".venv no existe (setup incompleto)")

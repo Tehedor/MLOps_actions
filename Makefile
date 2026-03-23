@@ -83,9 +83,9 @@ endif
 
 check-setup:
 	@echo "==> Verificando entorno base"
-	@$(PYTHON) setup/check_env.py
+	@MLOPS_USE_VENV=$(USE_VENV) $(PYTHON) setup/check_env.py
 	@echo "==> Verificando configuración del proyecto"
-	@$(PYTHON) setup/check_setup.py
+	@MLOPS_USE_VENV=$(USE_VENV) $(PYTHON) setup/check_setup.py
 
 clean-setup:
 	@echo "==> Eliminando MLflow asociado al proyecto (si existe)"
