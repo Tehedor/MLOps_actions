@@ -1,4 +1,4 @@
-name: "♻️ Reusable: Fase 2 (Prepare Events)"
+name: "2️⃣♻️ Reusable: Fase 2 (Prepare Events)"
 
 on:
   workflow_call:
