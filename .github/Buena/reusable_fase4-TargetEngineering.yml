@@ -1,0 +1,95 @@
+name: "4️⃣♻️ Reusable: Fase 4 (Target Engineering)"
+
+on:
+  workflow_call:
+    inputs:
+      variant_id:
+        required: true
+        type: string
+      parent_variant:
+        required: true
+        type: string
+      params_json:
+        required: true
+        type: string
+
+jobs:
+  ejecutar-fase-2:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      # Carga de credenciales automáticas
+      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+      FASE1_FOLDER_ID: ${{ secrets.FASE1_FOLDER_ID }}
+      FASE2_FOLDER_ID: ${{ secrets.FASE2_FOLDER_ID }}
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # [Aquí iría tu paso de descargar credenciales init-gdrive]
+      
+      # 1. COMPROBAR Y DESCARGAR PADRE (Si no existe, el job falla aquí)
+      - name: Pull variante padre (Fase 1)
+        working-directory: .mlops_tools
+        run: make pull_variant_from_storage_fase1 VARIANT=${{ inputs.parent_variant }}
+
+      # 2. CONVERTIR JSON DE LA API EN ARGUMENTOS DE MAKE
+      - name: Preparar argumentos dinámicos
+        id: build-args
+        run: |
+          python - <<'EOF'
+          import json
+          import os
+          
+          # Leemos el JSON inyectado desde el trigger
+          params = json.loads('''${{ inputs.params_json }}''')
+          
+          # Construimos el string: BANDS="5 15" STRATEGY=transitions
+          make_args = []
+          for key, value in params.items():
+              # Escapamos comillas si hay espacios
+              make_args.append(f'{key}="{value}"')
+              
+          args_string = " ".join(make_args)
+          
+          # Guardamos en GITHUB_ENV para el siguiente paso
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"MAKE_DYNAMIC_ARGS={args_string}\n")
+          EOF
+
+      # 3. CREAR VARIANTE (Local)
+      - name: Crear variante Fase 2
+        run: |
+          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
+          make variant2 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
+
+      # 4. EJECUTAR SCRIPT (Local)
+      - name: Ejecutar script de Fase 2
+        run: make script2-run VARIANT=${{ inputs.variant_id }}
+
+      # 5. CHECK Y VERIFICACIÓN (Punto de no retorno)
+      - name: Verificar resultados de Fase 2
+        run: make script2-check-results VARIANT=${{ inputs.variant_id }}
+
+      # ==========================================
+      # 💾 ZONA DE GUARDADO (Solo se ejecuta si el CHECK anterior pasó)
+      # ==========================================
+
+      - name: "[SYNC] Push variants.yaml de la fase 2"
+        working-directory: .mlops_tools
+        run: make push_variant_to_storage_fase2
+
+      - name: "[SYNC] Push carpeta de variante (v011) a GDrive"
+        working-directory: .mlops_tools
+        run: make push_to_storage_fase2 VARIANT=${{ inputs.variant_id }}
+
+      # Opcional: Subir a GitHub Artifacts también para tenerlo a mano en la UI
+      - name: Subir Artifact de ejecución exitosa
+        uses: actions/upload-artifact@v4
+        with:
+          name: f2-${{ inputs.variant_id }}-success
+          path: executions/02_prepareeventsds/${{ inputs.variant_id }}/
+          retention-days: 5

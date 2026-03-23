@@ -149,7 +149,7 @@ publish-generic: check-variant-format
 
 	@echo "==> Registrando artefactos DVC"
 	@for ext in $(PUBLISH_EXTS); do \
-	  find $(VARIANTS_DIR)/$(VARIANT) -type f -name "*.$$ext" -exec $(DVC) add {} + 2>/dev/null || true; \
+	  $(DVC) add $(VARIANTS_DIR)/$(VARIANT)/*.$$ext 2>/dev/null || true; \
 	done
 
 	@echo "==> Añadiendo a Git solo la variante publicada"
@@ -168,9 +168,8 @@ publish-generic: check-variant-format
 	# Determinamos modo publish
 	@MODE=$$($(PYTHON) -c "import yaml,pathlib;cfg=pathlib.Path('.mlops4ofp/setup.yaml');print('error' if not cfg.exists() else yaml.safe_load(cfg.read_text()).get('git',{}).get('mode','none'))"); \
 	if [ "$$MODE" = "custom" ]; then \
-		CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
-		echo "[INFO] Remote 'publish' detectado: empujando a publish/$$CURRENT_BRANCH"; \
-		git push publish HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
+		echo "[INFO] Remote 'publish' detectado: empujando a publish"; \
+		git push publish HEAD:main || echo "[WARN] git push publish failed"; \
 	elif [ "$$MODE" = "none" ]; then \
 		echo "[INFO] Setup en modo git.mode=none: commit local únicamente"; \
 	else \
@@ -178,8 +177,7 @@ publish-generic: check-variant-format
 	fi
 
 	@echo "==> Push DVC"
-# 	@$(DVC) push -r storage || (echo "[ERROR] dvc push failed"; exit 1)
-	@$(DVC) push  || (echo "[ERROR] dvc push failed"; exit 1)
+	@$(DVC) push -r storage || (echo "[ERROR] dvc push failed"; exit 1)
 
 	@echo "[OK] Publicación completada: variante $(PHASE):$(VARIANT)"
 
@@ -208,8 +206,7 @@ remove-generic: check-variant-format
 
 	@MODE=$$($(PYTHON) -c "import yaml,pathlib;cfg=pathlib.Path('.mlops4ofp/setup.yaml');print('error' if not cfg.exists() else yaml.safe_load(cfg.read_text()).get('git',{}).get('mode','none'))"); \
 	if [ "$$MODE" = "custom" ]; then \
-		CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
-		git push publish HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
+		git push publish HEAD:main || echo "[WARN] git push publish failed"; \
 	elif [ "$$MODE" = "none" ]; then \
 		echo "[INFO] Setup en modo git.mode=none: commit local únicamente"; \
 	else \
@@ -767,7 +764,8 @@ script4-check-results: check-variant-format
 	$(MAKE) check-results-generic PHASE=$(PHASE4) VARIANTS_DIR=$(VARIANTS_DIR_04) \
 		VARIANT=$(VARIANT) CHECK_FILES="04_targetengineering_dataset.parquet \
 		04_targetengineering_metadata.json 04_targetengineering_params.json \
-		04_targetengineering_report.html"
+		04_targetengineering_summary.json"
+# 		04_targetengineering_report.html"
 
 
 
@@ -981,102 +979,68 @@ endif
 ############################################
 # 4. PUBLICAR + MARCAR COMO PUBLISHED
 ############################################
-# 1. Definimos el script de Python con autenticación de DagsHub
-define MLFLOW_SCRIPT
-import json, os, sys
-import mlflow,dagshub
-
-dagshub.init(repo_owner="Tehedor", repo_name="mlops4ofp-tehedor-test", mlflow=True)
-# Quitamos dagshub.init(). MLflow leerá las credenciales 
-# directamente de las variables de entorno que le pasaremos ahora.
-
-meta_path = os.environ["META"]
-with open(meta_path) as f:
-    data = json.load(f)
-
-reg = data.get("mlflow_registration")
-if not reg:
-    print("[ERROR] No existe bloque mlflow_registration en metadata")
-    sys.exit(1)
-
-exp_name = reg["experiment_name"]
-metrics = reg.get("metrics", {})
-params = reg.get("params", {})
-artifacts = reg.get("artifacts", [])
-
-# Le decimos a MLflow qué experimento usar
-mlflow.set_experiment(exp_name)
-exp = mlflow.get_experiment_by_name(exp_name)
-
-# Iniciamos el run y registramos todo
-with mlflow.start_run() as run:
-    if params:
-        mlflow.log_params(params)
-    if metrics:
-        mlflow.log_metrics(metrics)
-    
-# === REGISTRO DE ARTEFACTOS ===
-    # Subimos los archivos al run (Experiments)
-    for a in artifacts:
-        if os.path.exists(a):
-            if os.path.isdir(a):
-                mlflow.log_artifacts(a)
-            else:
-                mlflow.log_artifact(a)
-    
-    run_id = run.info.run_id
-    exp_id = exp.experiment_id
-
-    # === REGISTRO EN EL MODEL REGISTRY ===
-    # Asumimos que el modelo final está en artifacts y se llama "model.h5" o está en "models/molamas"
-    # Vamos a buscar la ruta del modelo final dentro de los artefactos
-    modelo_final_path = next((a for a in artifacts if "models/molamas" in a), None)
-    
-    if modelo_final_path and os.path.exists(modelo_final_path):
-        # El nombre que tendrá el modelo en la pestaña "Models"
-        registry_model_name = "OFP_Anomaly_Detector" 
-        
-        print(f"==> Registrando modelo en MLflow Registry como: {registry_model_name}")
-        
-        # En MLflow, para registrar un modelo subido mediante log_artifact, 
-        # la URI tiene el formato runs:/<run_id>/<ruta_relativa_del_artefacto>
-        # Como log_artifact guarda los archivos en la raíz del artefacto del run:
-        artifact_name = os.path.basename(modelo_final_path)
-        model_uri = f"runs:/{run_id}/{artifact_name}"
-        
-        try:
-            mlflow.register_model(model_uri=model_uri, name=registry_model_name)
-            print("[OK] Modelo registrado en el Model Registry.")
-        except Exception as e:
-            print(f"[WARN] No se pudo registrar en el Model Registry: {e}")
-			
-# Guardamos los IDs
-data["mlflow"] = {
-    "run_id": run_id, 
-    "experiment_id": exp_id, 
-    "experiment_name": exp_name
-}
-
-with open(meta_path, "w") as f:
-    json.dump(data, f, indent=2)
-
-print(f"[OK] Run MLflow creado con éxito: {run_id}")
-endef
-
-export MLFLOW_SCRIPT
-
-# 2. El target publish5
 publish5: check-variant-format
 	@bash -c 'set -e; \
 	META="$(VARIANTS_DIR_05)/$(VARIANT)/$(PHASE5)_metadata.json"; \
 	if [ ! -f "$$META" ]; then \
-	    echo "[ERROR] Falta metadata 05_modeling_metadata.json"; exit 1; \
+		echo "[ERROR] Falta metadata 05_modeling_metadata.json"; exit 1; \
 	fi; \
-	echo "==> Registrando run en MLflow (DagsHub)"; \
+	echo "==> Registrando run en MLflow"; \
 	export META; \
-	echo "$$MLFLOW_SCRIPT" | $(PYTHON) - '
+	$(PYTHON) - <<'"'"'EOF'"'"'\
+import json, subprocess, os, sys\
+\
+meta_path = os.environ["META"]\
+with open(meta_path) as f:\
+    data = json.load(f)\
+\
+reg = data.get("mlflow_registration")\
+if not reg:\
+    print("[ERROR] No existe bloque mlflow_registration en metadata")\
+    sys.exit(1)\
+\
+exp_name = reg["experiment_name"]\
+metrics = reg.get("metrics", {})\
+params = reg.get("params", {})\
+artifacts = reg.get("artifacts", [])\
+\
+subprocess.run(["mlflow", "experiments", "create", "--experiment-name", exp_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\
+\
+out = subprocess.check_output(["mlflow", "experiments", "list", "--format", "json"])\
+import json as _json\
+exps = _json.loads(out)\
+exp_id = next((e["experiment_id"] for e in exps if e["name"] == exp_name), None)\
+\
+if not exp_id:\
+    print("[ERROR] No se pudo obtener experiment_id")\
+    sys.exit(1)\
+\
+out = subprocess.check_output(["mlflow", "runs", "create", "--experiment-id", exp_id, "--format", "json"])\
+run = _json.loads(out)\
+run_id = run["info"]["run_id"]\
+\
+for k, v in params.items():\
+    subprocess.run(["mlflow", "runs", "log-param", "--run-id", run_id, "--key", str(k), "--value", str(v)])\
+\
+for k, v in metrics.items():\
+    subprocess.run(["mlflow", "runs", "log-metric", "--run-id", run_id, "--key", str(k), "--value", str(v)])\
+\
+for a in artifacts:\
+    if os.path.exists(a):\
+        subprocess.run(["mlflow", "runs", "log-artifact", "--run-id", run_id, "--local-path", a])\
+\
+data["mlflow"] = {"run_id": run_id, "experiment_id": exp_id, "experiment_name": exp_name}\
+\
+with open(meta_path, "w") as f:\
+    json.dump(data, f, indent=2)\
+\
+print(f"[OK] Run MLflow creado: {run_id}")\
+EOF\
+	'
+
 	$(MAKE) publish-generic PHASE=$(PHASE5) VARIANTS_DIR=$(VARIANTS_DIR_05) \
-	    PUBLISH_EXTS="parquet json html h5" VARIANT=$(VARIANT)
+		PUBLISH_EXTS="parquet json html h5" VARIANT=$(VARIANT)
+
 
 ############################################
 # 5. ELIMINAR VARIANTE FASE 05 + LIMPIEZA MLFLOW COMPLETA

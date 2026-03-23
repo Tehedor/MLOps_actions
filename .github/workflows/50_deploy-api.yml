@@ -1,0 +1,138 @@
+name: MLOps Pipeline - Ejecutar por API
+
+on:
+  repository_dispatch:
+    types: [ejecutar-fase-api]
+
+jobs:
+  # Job de notificación inicial
+  notify-start:
+    runs-on: ubuntu-latest
+    outputs:
+      run_id: ${{ github.run_id }}
+    steps:
+      - name: "📢 Evento recibido"
+        run: |
+          echo "✅ EVENTO RECIBIDO"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Tipo: ${{ github.event.action }}"
+          echo "Fase: ${{ github.event.client_payload.fase }}"
+          echo "Variant ID: ${{ github.event.client_payload.variant_id }}"
+          echo "Parent: ${{ github.event.client_payload.parent_variant }}"
+          echo "Parámetros: ${{ toJSON(github.event.client_payload.params) }}"
+          echo "Ejecutor: ubuntu-latest"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Job que ejecuta la fase específica
+  execute-fase:
+    needs: notify-start
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Descargar repositorio"
+        uses: actions/checkout@v4
+
+      - name: "🚀 Fase en ejecución: ${{ github.event.client_payload.fase }}"
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔄 EJECUTANDO FASE: ${{ github.event.client_payload.fase }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Variante: ${{ github.event.client_payload.variant_id }}"
+          echo "ID de ejecución: ${{ github.run_id }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: "⚙️ Mostrar parámetros"
+        run: |
+          echo "📋 PARÁMETROS RECIBIDOS:"
+          echo "${{ toJSON(github.event.client_payload.params) }}" | jq '.' || echo "${{ toJSON(github.event.client_payload.params) }}"
+
+      - name: "🔧 Ejecutar fase 1: Exploración (si corresponde)"
+        if: github.event.client_payload.fase == 'fase1'
+        run: |
+          echo "📊 Iniciando Fase 1: Exploración y Limpieza"
+          echo "Parámetros:"
+          echo "  - RAW: ${{ fromJSON(toJSON(github.event.client_payload.params)).RAW }}"
+          echo "  - CLEANING_STRATEGY: ${{ fromJSON(toJSON(github.event.client_payload.params)).CLEANING_STRATEGY }}"
+          echo "  - NAN_VALUES: ${{ fromJSON(toJSON(github.event.client_payload.params)).NAN_VALUES }}"
+          # AQUÍ VAL TU LÓGICA DE LA FASE 1
+          echo "⏳ Ejecutando make variant1..."
+          # make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+          echo "✓ Fase 1 simulada (descomentar make cuando esté listo)"
+
+      - name: "🔧 Ejecutar fase 2: Preparación de eventos (si corresponde)"
+        if: github.event.client_payload.fase == 'fase2'
+        run: |
+          echo "📊 Iniciando Fase 2: Preparación de eventos"
+          echo "Parámetros:"
+          echo "  - BANDS: ${{ fromJSON(toJSON(github.event.client_payload.params)).BANDS }}"
+          echo "  - STRATEGY: ${{ fromJSON(toJSON(github.event.client_payload.params)).STRATEGY }}"
+          echo "  - NAN: ${{ fromJSON(toJSON(github.event.client_payload.params)).NAN }}"
+          echo "⏳ Ejecutando make variant2..."
+          # make variant2 VARIANT=v011 PARENT=v001 BANDS="20 60 80" STRATEGY=transitions NAN=discard
+          echo "✓ Fase 2 simulada"
+
+      - name: "🔧 Ejecutar fase 3: Ventanas de datos (si corresponde)"
+        if: github.event.client_payload.fase == 'fase3'
+        run: |
+          echo "📊 Iniciando Fase 3: Preparación de Windows Dataset"
+          echo "Parámetros:"
+          echo "  - OW: ${{ fromJSON(toJSON(github.event.client_payload.params)).OW }}"
+          echo "  - LT: ${{ fromJSON(toJSON(github.event.client_payload.params)).LT }}"
+          echo "  - PW: ${{ fromJSON(toJSON(github.event.client_payload.params)).PW }}"
+          echo "  - WS: ${{ fromJSON(toJSON(github.event.client_payload.params)).WS }}"
+          echo "⏳ Ejecutando make variant3 y script3-run..."
+          # make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard && make script3-run VARIANT=v111
+          echo "✓ Fase 3 simulada"
+
+      - name: "🔧 Ejecutar fase 4: Target Engineering (si corresponde)"
+        if: github.event.client_payload.fase == 'fase4'
+        run: |
+          echo "📊 Iniciando Fase 4: Target Engineering"
+          echo "Parámetros:"
+          echo "  - PREDICTION_NAME: ${{ fromJSON(toJSON(github.event.client_payload.params)).PREDICTION_NAME }}"
+          echo "  - OBJECTIVE: ${{ fromJSON(toJSON(github.event.client_payload.params)).OBJECTIVE }}"
+          echo "⏳ Ejecutando make variant4 y script4-run..."
+          # make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=molamas ...
+          echo "✓ Fase 4 simulada"
+
+      - name: "🔧 Ejecutar fase 5: Modelado (si corresponde)"
+        if: github.event.client_payload.fase == 'fase5'
+        run: |
+          echo "📊 Iniciando Fase 5: Modelado"
+          echo "Parámetros:"
+          echo "  - MODEL_FAMILY: ${{ fromJSON(toJSON(github.event.client_payload.params)).MODEL_FAMILY }}"
+          echo "  - IMBALANCE_STRATEGY: ${{ fromJSON(toJSON(github.event.client_payload.params)).IMBALANCE_STRATEGY }}"
+          echo "  - IMBALANCE_MAX_MAJ: ${{ fromJSON(toJSON(github.event.client_payload.params)).IMBALANCE_MAX_MAJ }}"
+          echo "⏳ Ejecutando make variant5 y script5-run..."
+          # make variant5 VARIANT=v301 PARENT=v201 MODEL_FAMILY=dense_bow ...
+          echo "✓ Fase 5 simulada"
+
+  # Job de notificación final
+  notify-complete:
+    needs: execute-fase
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: "✅ Ejecución completada"
+        if: needs.execute-fase.result == 'success'
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ EJECUCIÓN COMPLETADA CON ÉXITO"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Fase: ${{ github.event.client_payload.fase }}"
+          echo "Variante: ${{ github.event.client_payload.variant_id }}"
+          echo "Estado: SUCCESS"
+          echo "Fin: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: "❌ Ejecución fallida"
+        if: needs.execute-fase.result != 'success'
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "❌ EJECUCIÓN FALLIDA"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Fase: ${{ github.event.client_payload.fase }}"
+          echo "Variante: ${{ github.event.client_payload.variant_id }}"
+          echo "Estado: ${{ needs.execute-fase.result }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          exit 1
