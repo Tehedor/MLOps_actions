@@ -24,31 +24,15 @@ jobs:
     container:
       image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
     env:
-      # Carga de credenciales automáticas
-      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
-      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-
+      VARIANT_ID: ${{ inputs.variant_id }}
+      PARENT_VARIANT: ${{ inputs.parent_variant }}
+      PARAMS_JSON: ${{ inputs.params_json }}
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
+      - name: 1. Clean setup
+        run: make clean-setup
 
-      # [Aquí iría tu paso de descargar credenciales init-gdrive]
-      
-      # 1. COMPROBAR Y DESCARGAR PADRE (Si no existe, el job falla aquí)
-      - name: Pull variante padre (Fase 1)
-        working-directory: .mlops_tools
-        run: make pull_variant_from_storage_fase1 VARIANT=${{ inputs.parent_variant }}
+      - name: 2. Setup remoto
+        run: make setup SETUP_CFG=setup/remote.yaml
 
-      # 3. CREAR VARIANTE (Local)
-      - name: Crear variante Fase 2
-        run: |
-          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
-          make variant2 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
-
-      # 4. EJECUTAR SCRIPT (Local)
-      - name: Ejecutar script de Fase 2
-        run: make script2-run VARIANT=${{ inputs.variant_id }}
-
-      # 5. CHECK Y VERIFICACIÓN (Punto de no retorno)
-      - name: Verificar resultados de Fase 2
-        run: make script2-check-results VARIANT=${{ inputs.variant_id }}
+      - name: 3. Check setup
+        run: make check-setup
