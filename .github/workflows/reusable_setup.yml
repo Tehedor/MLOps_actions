@@ -54,9 +54,17 @@ jobs:
       - name: 2. Setup remoto
         run: make setup SETUP_CFG=setup/remote.yaml
 
+      # - name: Configure DVC credentials
+      #   run: |
+      #     dvc remote modify origin --local auth basic
+      #     dvc remote modify origin --local user Tehedor
+      #     dvc remote modify origin --local password ${{ secrets.DAGSHUB_TOKEN }}
+
       - name: Mostrar comandos de setup disponibles
         run: |
-          make -n help-setup | head -n 5; echo '---'
+          make -n help-setup > /tmp/help-setup.txt
+          head -n 5 /tmp/help-setup.txt
+          echo '---'
 
       - name: Mostrar la configuración de dvc.
         run: cat .dvc/config
