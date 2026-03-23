@@ -1,0 +1,16 @@
+# Extraido de .github/workflows/36_test_pipeline_f0-f5_container_gdrive.yaml
+
+# Fase 1
+make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+
+# Fase 2
+make variant2 VARIANT=v011 PARENT=v001 BANDS="20 60 80" STRATEGY=transitions NAN=discard
+
+# Fase 3 (activo)
+make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard && make script3-run VARIANT=v111
+
+# Fase 4
+make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=molamas OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-80_100, Battery_Active_Power_60_80-to-80_100]}" && make script4-run VARIANT=v201
+
+# Fase 5
+make variant5 VARIANT=v301 PARENT=v201 MODEL_FAMILY=dense_bow IMBALANCE_STRATEGY=rare_events IMBALANCE_MAX_MAJ=20000 && make script5-run VARIANT=v301

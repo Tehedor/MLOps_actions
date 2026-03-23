@@ -1,0 +1,26 @@
+name: 🚦 API MLOps Orchestrator
+
+on:
+  repository_dispatch:
+    types: [ejecutar-fase]
+
+jobs:
+  # Rutas de ejecución condicionadas
+  trigger-fase2:
+    if: ${{ github.event.client_payload.fase == 'fase2' }}
+    uses: ./.github/workflows/fases/reusable_fase2.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      parent_variant: ${{ github.event.client_payload.parent_variant }}
+      # Pasamos el objeto params como un string JSON para decodificarlo dentro
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit # Pasa automáticamente todos los secrets de GDrive
+    
+  # trigger-fase3:
+  #   if: ${{ github.event.client_payload.fase == 'fase3' }}
+  #   uses: ./.github/workflows/fases/reusable_fase3.yml
+  #   with:
+  #     variant_id: ${{ github.event.client_payload.variant_id }}
+  #     parent_variant: ${{ github.event.client_payload.parent_variant }}
+  #     params_json: ${{ toJSON(github.event.client_payload.params) }}
+  #   secrets: inherit
