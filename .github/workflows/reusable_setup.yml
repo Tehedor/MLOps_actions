@@ -31,6 +31,9 @@ jobs:
       # PARENT_VARIANT: ${{ inputs.parent_variant }}
       # PARAMS_JSON: ${{ inputs.params_json }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: 1. Clean setup
         run: make clean-setup
 
