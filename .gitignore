@@ -2,34 +2,37 @@
 # GITIGNORE PARA MLOPS4OFP — FASES, VARIANTES Y DVC
 # =====================================================
 
-# === ARCHIVOS DE SALIDA GLOBALES NO VERSIONADOS ===
-/outputs/
-/local_dvc_store/
-/local_dvc_store/*
+# === EXCEPCIONES CRÍTICAS (Sobrescriben reglas globales) ===
+# Forzamos a Git a rastrear la carpeta .dvc (necesario para inicializar)
+!.dvc/
+# Pero ignoramos estrictamente el archivo de credenciales locales
+.dvc/config.local
 
 # === DVC CACHE (NUNCA subir estos directorios) ===
 /.dvc/cache/
 /.dvc/tmp/
 
+# === ARCHIVOS DE SALIDA GLOBALES NO VERSIONADOS ===
+/outputs/
+/local_dvc_store/
+/local_dvc_store/*
+
 # === RAW DATA (controlado SOLO por DVC) ===
-# data/
-# # ⚠️ PERMITIR ARCHIVOS .dvc en data/ (necesarios para git)
-# !data/*.dvc
-
-# entorno
-.venv/
-__pycache__/
-
-# datasets y salidas
-exports/
-*.parquet
-
-# Archivo raw de pruebas
+*.csv
 # data/raw_merged.csv
 # data/raw.csv
-*.csv
 
-setup/gdrive_credentials.json
+# === ENTORNOS Y ARCHIVOS DEL SISTEMA ===
+.venv/
+__pycache__/
+.DS_Store
+.idea/
+#.vscode/*
+*.log
+
+# === DATASETS Y SALIDAS ===
+exports/
+*.parquet
 
 # === IGNORAR ARTEFACTOS DE VARIANTES ===
 executions/*/v*/**/*.parquet
@@ -46,42 +49,26 @@ executions/*/v*/**/reports/
 # === NOTEBOOKS ANTIGUOS ===
 notebooks-old/*
 
-# === ENTORNOS Y ARCHIVOS DEL SISTEMA ===
-#.venv/
-.DS_Store
-.idea/
-#.vscode/*
-*.log
-__pycache__/
-
-# Credentials
-setup/gdrive-credentials.json
-*.key
-*.pem
-*.p12
-
-
-# Apps
-apps/windows_app/files_output/epoch_processed
-apps/windows_app/files_output/queries
-apps/temporal_app/epoch_processed
-pipeline_lineage.html
-
-# Entorno
+# === SEGURIDAD Y CREDENCIALES ===
 .env
-env.md
-
+.env.local
 .env-gfolders
-
-# Claves .mlops_tools
+env.md
+setup/gdrive_credentials.json
+setup/gdrive-credentials.json
 client_secrets.json
 token.json
 gdrive_token.json
 dvc_token.json
 service_account.json
-config.local
+*.key
+*.pem
+*.p12
 
+# === APPS Y PIPELINES ===
+apps/windows_app/files_output/epoch_processed
+apps/windows_app/files_output/queries
+apps/temporal_app/epoch_processed
+pipeline_lineage.html
 03_deploy-api.http
 *deploy-api.http
-
-.dvc

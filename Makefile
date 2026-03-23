@@ -91,7 +91,8 @@ clean-setup:
 	@echo "==> Eliminando MLflow asociado al proyecto (si existe)"
 	@$(PYTHON_LOCAL) -c 'import yaml,pathlib,subprocess,os,shutil,json,sys;cfg_path=pathlib.Path(".mlops4ofp/setup.yaml");sys.exit(0) if not cfg_path.exists() else None;cfg=yaml.safe_load(cfg_path.read_text());ml=cfg.get("mlflow",{});sys.exit(0) if not ml.get("enabled",False) else None;uri=ml.get("tracking_uri","");(print(f"[INFO] Eliminando MLflow local en {path}") or shutil.rmtree(path)) if uri.startswith("file:") and os.path.exists(path:=uri.replace("file:","")) else (print("[INFO] MLflow remoto detectado: eliminando experimentos del proyecto (prefijo F05_)") or [print(f"[INFO] Eliminando experimento remoto {exp.get(\"name\",\"\")}") or subprocess.run(["mlflow","experiments","delete","--experiment-id",exp.get("experiment_id")],check=False) for exp in (experiments:=json.loads(subprocess.check_output(["mlflow","experiments","list","--format","json"]))) if exp.get("name","").startswith("F05_") and exp.get("experiment_id")] if True else None) if uri else None' 2>/dev/null || true
 	@echo "==> Eliminando entorno completo del proyecto ML"
-	@rm -rf .mlops4ofp .dvc .dvc_storage local_dvc_store .venv executions
+# 	@rm -rf .mlops4ofp .dvc .dvc_storage local_dvc_store .venv executions
+	@rm -rf .mlops4ofp .dvc .dvc_storage local_dvc_store executions
 	@echo "[OK] Proyecto ML reinicializado. Ejecuta 'make setup' para reconstruir estructura base."
 
 

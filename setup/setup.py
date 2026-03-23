@@ -244,22 +244,23 @@ def setup_git(cfg):
 # ============================================================
 # DVC
 # ============================================================
-
 def add_or_update_dvc_remote(venv_python, name, url):
-
+    print(f"[INFO] Configurando remote DVC '{name}' -> {url}")
     result = subprocess.run(
         [str(venv_python), "-m", "dvc", "remote", "add", "-d", name, url],
         cwd=ROOT,
         capture_output=True,
         text=True,
     )
-
+    
+    # Si falla, miramos exactamente por qué ha fallado
     if result.returncode != 0:
-        print("[INFO] Remote DVC ya existe → actualizando URL")
-        run([
-            str(venv_python), "-m", "dvc",
-            "remote", "modify", name, "url", url
-        ])
+        if "already exists" in result.stderr or "conflicts with" in result.stderr:
+            print(f"[INFO] Remote '{name}' ya existe. Actualizando URL...")
+            run([str(venv_python), "-m", "dvc", "remote", "modify", name, "url", url])
+        else:
+            print(f"[ERROR] STDERR: {result.stderr}")
+            abort(f"Fallo crítico en DVC al añadir el remote '{name}'.")
 
 
 def setup_dvc(cfg):
@@ -301,22 +302,23 @@ def setup_dvc(cfg):
 
         user = os.environ.get("DAGSHUB_USER")
         token = os.environ.get("DAGSHUB_TOKEN")
-
-        if not user or not token:
-            abort(
-                "Faltan variables de entorno:\n"
-                "export DAGSHUB_USER=...\n"
-                "export DAGSHUB_TOKEN=..."
-            )
-
+        
         remote_url = f"https://dagshub.com/{repo}.dvc"
-
         add_or_update_dvc_remote(runtime_python, "storage", remote_url)
 
-        run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "auth", "basic"])
-        run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "user", user])
-        run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "password", token])
-
+        # 2. LUEGO LE METEMOS LAS CREDENCIALES
+        user = os.environ.get("DAGSHUB_USER")
+        token = os.environ.get("DAGSHUB_TOKEN")
+        if not user or not token:
+            print("[WARN] Faltan variables DAGSHUB_USER o DAGSHUB_TOKEN.")
+            print("[WARN] El remote 'storage' se ha creado, pero DVC no tendrá permisos para hacer push/pull.")
+            print("[WARN] Para solucionarlo, exporta las variables o configúralas en GitHub Actions.")
+        else:
+            print("[INFO] Configurando credenciales DVC de forma segura (--local)")
+            # CRÍTICO: Añadido --local para que los secretos vayan a config.local y no a Git
+            run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "--local", "auth", "basic"])
+            run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "--local", "user", user])
+            run([str(runtime_python), "-m", "dvc", "remote", "modify", "storage", "--local", "password", token])
     else:
         abort(f"Backend DVC no soportado: {backend}")
 
