@@ -1,22 +1,22 @@
 name: "🃏♻️ Reusable: Fase setup"
 
 on:
-  workflow_call:
-    inputs:
-      variant_id:
-        required: true
-        type: string
-      parent_variant:
-        required: true
-        type: string
-      params_json:
-        required: true
-        type: string
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - '*'
+  # workflow_call:
+    # inputs:
+    #   variant_id:
+    #     required: true
+    #     type: string
+    #   parent_variant:
+    #     required: true
+    #     type: string
+    #   params_json:
+    #     required: true
+    #     type: string
+  push:
+    branches:
+      - main
+    paths:
+      - '*'
 
 jobs:
   ejecutar-fase-2:
@@ -24,15 +24,28 @@ jobs:
     container:
       image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
     env:
-      VARIANT_ID: ${{ inputs.variant_id }}
-      PARENT_VARIANT: ${{ inputs.parent_variant }}
-      PARAMS_JSON: ${{ inputs.params_json }}
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+      # VARIANT_ID: ${{ inputs.variant_id }}
+      # PARENT_VARIANT: ${{ inputs.parent_variant }}
+      # PARAMS_JSON: ${{ inputs.params_json }}
     steps:
       - name: 1. Clean setup
         run: make clean-setup
 
       - name: 2. Setup remoto
         run: make setup SETUP_CFG=setup/remote.yaml
+
+      - name: Mostrar comandos de setup disponibles
+        run: |
+          make -n help-setup | head -n 5; echo '---'
+
+      - name: Mostrar la configuración de dvc.
+        run: cat .dvc/config
+
+      - name: Check workspace tree
+        run: tree . 
 
       - name: 3. Check setup
         run: make check-setup

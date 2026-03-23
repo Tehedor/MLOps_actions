@@ -1,8 +1,8 @@
 name: MLOps Pipeline - Ejecutar por API
 
 on:
-  repository_dispatch:
-    types: [ejecutar-fase-api]
+  # repository_dispatch:
+  #   types: [ejecutar-fase-api]
 
 jobs:
   # Job de notificación inicial

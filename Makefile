@@ -45,6 +45,7 @@ endif
 SETUP_PY = setup/setup.py
 SETUP_ENV = .mlops4ofp/env.sh
 SETUP_CFG ?=
+USE_VENV ?= 1 # 1=usa .venv local, 0=usa Python del sistema (útil para CI o entornos ya gestionados)
 
 help-setup:
 	@echo "=============================================="
@@ -58,6 +59,7 @@ help-setup:
 	@echo ""
 	@echo "  make setup SETUP_CFG=setup/example_setup.yaml"
 	@echo "      Setup no interactivo desde fichero YAML"
+	@echo "      [USE_VENV=1|0] (1=usa .venv, 0=usa Python del sistema)"
 	@echo ""
 	@echo "  make setup SETUP_CFG=setup/example_setup.yaml"
 	@echo "      Setup no interactivo desde fichero YAML (obligatorio)"
@@ -76,7 +78,7 @@ ifndef SETUP_CFG
 	$(error Debes especificar SETUP_CFG=<fichero.yaml> (ej: setup/local.yaml o setup/remote.yaml))
 endif
 	@$(PYTHON_LOCAL) -m pip install pyyaml==6.0.1
-	@$(PYTHON_LOCAL) $(SETUP_PY) --config $(SETUP_CFG)
+	@MLOPS_USE_VENV=$(USE_VENV) $(PYTHON_LOCAL) $(SETUP_PY) --config $(SETUP_CFG)
 
 
 check-setup:
@@ -98,23 +100,35 @@ clean-setup:
 # ENTORNO DE EJECUCIÓN (PIPELINE)
 ############################################
 
-# ifeq ($(OS),Windows_NT)
-# PYTHON := .venv/Scripts/python.exe
-# DVC := .venv/Scripts/dvc.exe
-# JUPYTER := .venv/Scripts/jupyter.exe
-# else
-# ifneq ("$(wildcard .venv/bin/python3)","")
-# PYTHON := .venv/bin/python3
-# DVC := .venv/bin/dvc
-# JUPYTER := .venv/bin/jupyter
-# else
+ifeq ($(OS),Windows_NT)
+ifeq ($(USE_VENV),1)
+PYTHON := .venv/Scripts/python.exe
+DVC := .venv/Scripts/dvc.exe
+JUPYTER := .venv/Scripts/jupyter.exe
+else
+PYTHON := python
+DVC := dvc
+JUPYTER := jupyter
+endif
+else
+ifeq ($(USE_VENV),1)
+ifneq ("$(wildcard .venv/bin/python3)","")
+PYTHON := .venv/bin/python3
+DVC := .venv/bin/dvc
+JUPYTER := .venv/bin/jupyter
+else
 PYTHON := python3
 DVC := dvc
 JUPYTER := jupyter
-# endif
-# endif
+endif
+else
+PYTHON := python3
+DVC := dvc
+JUPYTER := jupyter
+endif
+endif
 
-$(info [INFO] Usando interprete Python en venv: $(PYTHON))
+$(info [INFO] Runtime pipeline Python: $(PYTHON) (USE_VENV=$(USE_VENV)))
 
 ############################################
 # Objetivos genéricos por fase (reutilizables)
@@ -981,14 +995,27 @@ endif
 ############################################
 # 4. PUBLICAR + MARCAR COMO PUBLISHED
 ############################################
-# 1. Definimos el script de Python con autenticación de DagsHub
 define MLFLOW_SCRIPT
 import json, os, sys
-import mlflow,dagshub
+import mlflow
 
-dagshub.init(repo_owner="Tehedor", repo_name="mlops4ofp-tehedor-test", mlflow=True)
-# Quitamos dagshub.init(). MLflow leerá las credenciales 
-# directamente de las variables de entorno que le pasaremos ahora.
+# 1. Configuración dinámica mediante variables de entorno (con fallback a valores por defecto)
+dagshub_repo_owner = os.environ.get("DAGSHUB_REPO_OWNER", "Tehedor")
+dagshub_repo_name = os.environ.get("DAGSHUB_REPO_NAME", "mlops4ofp-tehedor-test")
+
+# Construimos la URI por defecto si no nos pasan una explícitamente
+default_tracking_uri = f"https://dagshub.com/{dagshub_repo_owner}/{dagshub_repo_name}.mlflow"
+tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", default_tracking_uri)
+
+mlflow.set_tracking_uri(tracking_uri)
+
+# 2. Verificamos que las credenciales estén en el entorno (CI/CD friendly)
+# if not os.environ.get("MLFLOW_TRACKING_USERNAME"):
+#     os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_repo_owner
+
+# if not os.environ.get("MLFLOW_TRACKING_PASSWORD"):
+#     print("[ERROR] Falta el token. Configura la variable de entorno MLFLOW_TRACKING_PASSWORD.")
+#     sys.exit(1)
 
 meta_path = os.environ["META"]
 with open(meta_path) as f:
@@ -1015,8 +1042,7 @@ with mlflow.start_run() as run:
     if metrics:
         mlflow.log_metrics(metrics)
     
-# === REGISTRO DE ARTEFACTOS ===
-    # Subimos los archivos al run (Experiments)
+    # === REGISTRO DE ARTEFACTOS ===
     for a in artifacts:
         if os.path.exists(a):
             if os.path.isdir(a):
@@ -1028,19 +1054,12 @@ with mlflow.start_run() as run:
     exp_id = exp.experiment_id
 
     # === REGISTRO EN EL MODEL REGISTRY ===
-    # Asumimos que el modelo final está en artifacts y se llama "model.h5" o está en "models/molamas"
-    # Vamos a buscar la ruta del modelo final dentro de los artefactos
     modelo_final_path = next((a for a in artifacts if "models/molamas" in a), None)
     
     if modelo_final_path and os.path.exists(modelo_final_path):
-        # El nombre que tendrá el modelo en la pestaña "Models"
         registry_model_name = "OFP_Anomaly_Detector" 
-        
         print(f"==> Registrando modelo en MLflow Registry como: {registry_model_name}")
         
-        # En MLflow, para registrar un modelo subido mediante log_artifact, 
-        # la URI tiene el formato runs:/<run_id>/<ruta_relativa_del_artefacto>
-        # Como log_artifact guarda los archivos en la raíz del artefacto del run:
         artifact_name = os.path.basename(modelo_final_path)
         model_uri = f"runs:/{run_id}/{artifact_name}"
         
@@ -1049,7 +1068,7 @@ with mlflow.start_run() as run:
             print("[OK] Modelo registrado en el Model Registry.")
         except Exception as e:
             print(f"[WARN] No se pudo registrar en el Model Registry: {e}")
-			
+            
 # Guardamos los IDs
 data["mlflow"] = {
     "run_id": run_id, 
@@ -1068,6 +1087,10 @@ export MLFLOW_SCRIPT
 # 2. El target publish5
 publish5: check-variant-format
 	@bash -c 'set -e; \
+	set -a; \
+	[ -f .env ] && . ./.env || true; \
+	[ -f .env.local ] && . ./.env.local || true; \
+	set +a; \
 	META="$(VARIANTS_DIR_05)/$(VARIANT)/$(PHASE5)_metadata.json"; \
 	if [ ! -f "$$META" ]; then \
 	    echo "[ERROR] Falta metadata 05_modeling_metadata.json"; exit 1; \

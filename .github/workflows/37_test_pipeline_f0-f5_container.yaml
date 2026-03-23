@@ -27,13 +27,6 @@ jobs:
         with:
           fetch-depth: 0  # <--- ESTO ES LA CLAVE. Descarga el historial completo de Git.
 
-      - name: Validar secrets requeridos
-        run: |
-          test -n "$GDRIVE_CLIENT_ID" || (echo "Falta secret GDRIVE_CLIENT_ID" && exit 1)
-          test -n "$GDRIVE_CLIENT_SECRET" || (echo "Falta secret GDRIVE_CLIENT_SECRET" && exit 1)
-          test -n "$FASE0_FOLDER_ID" || (echo "Falta variable FASE0_FOLDER_ID" && exit 1)
-          test -n "$TOKEN_GDRIVE_DVC_JSON" || (echo "Falta secret TOKEN_GDRIVE_DVC_JSON" && exit 1)
-
       - name: Configurar DVC remote (GDrive)
         working-directory: .mlops_tools
         run: make dvc_setup_fase0

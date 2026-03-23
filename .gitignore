@@ -83,3 +83,5 @@ config.local
 
 03_deploy-api.http
 *deploy-api.http
+
+.dvc
