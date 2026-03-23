@@ -2,7 +2,7 @@ name: 🚦 API MLOps Orchestrator
 
 on:
   repository_dispatch:
-    types: [ejecutar-fase]
+    types: [ejecutar-fase-api]
 
 jobs:
   # Rutas de ejecución condicionadas
