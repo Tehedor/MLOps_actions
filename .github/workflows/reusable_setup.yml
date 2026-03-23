@@ -69,8 +69,11 @@ jobs:
       - name: Mostrar la configuración de dvc.
         run: cat .dvc/config
 
-      - name: Check workspace tree
-        run: tree . 
+      - name: Mostar los files de dvc
+        run: ls -la .dvc
 
       - name: 3. Check setup
         run: make check-setup
+
+      - name: Probar si descarga de DVC funciona
+        run: dvc pull -R data/raw
