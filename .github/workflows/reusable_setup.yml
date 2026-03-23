@@ -1,6 +1,11 @@
 name: "🃏♻️ Reusable: Fase setup"
 
 on:
+  push:
+    branches:
+      - main
+      paths:
+        - '*'
   # workflow_call:
     # inputs:
     #   variant_id:
@@ -12,11 +17,6 @@ on:
     #   params_json:
     #     required: true
     #     type: string
-  push:
-    branches:
-      - main
-    paths:
-      - '*'
 
 jobs:
   ejecutar-fase-0:
