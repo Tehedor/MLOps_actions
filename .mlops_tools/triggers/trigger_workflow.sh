@@ -7,6 +7,7 @@ set -e
 TOKEN="$1"
 REPO_OWNER="Tehedor"
 REPO_NAME="MLOps_actions"
+WORKFLOW_FILE="51_deploy-api.yml"
 FASE="${2:-fase1}"
 VARIANT_ID="${3:-v001}"
 PARENT_VARIANT="${4:-}"
@@ -19,9 +20,10 @@ if [[ -z "$TOKEN" ]]; then
 fi
 
 echo "📤 Disparando workflow: fase=$FASE, variant_id=$VARIANT_ID"
+DISPATCHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # 1. Disparar el workflow
-DISPATCH_RESPONSE=$(curl -s -X POST \
+DISPATCH_HTTP=$(curl -sS -o /tmp/dispatch_response.json -w "%{http_code}" -X POST \
   -H "Accept: application/vnd.github.v3+json" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -39,10 +41,12 @@ DISPATCH_RESPONSE=$(curl -s -X POST \
 EOF
 )
 
-if [[ -z "$DISPATCH_RESPONSE" ]]; then
+if [[ "$DISPATCH_HTTP" == "204" ]]; then
   echo "✅ Evento disparado exitosamente"
 else
-  echo "⚠️  Respuesta del servidor: $DISPATCH_RESPONSE"
+  echo "❌ Error al disparar evento (HTTP $DISPATCH_HTTP)"
+  cat /tmp/dispatch_response.json
+  exit 1
 fi
 
 # 2. Obtener el ID del último workflow run
@@ -53,19 +57,20 @@ MAX_ATTEMPTS=10
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-  RUNS=$(curl -s \
+  RUNS=$(curl -sS \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: Bearer $TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs?event=repository_dispatch&per_page=1" \
-    | jq -r '.workflow_runs[0] | "\(.id)|\(.status)|\(.conclusion)"')
+    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=10" \
+    | jq -r --arg since "$DISPATCHED_AT" '.workflow_runs[] | select(.created_at >= $since) | "\(.id)|\(.status)|\(.conclusion)"' \
+    | head -n1)
   
   RUN_ID=$(echo "$RUNS" | cut -d'|' -f1)
   STATUS=$(echo "$RUNS" | cut -d'|' -f2)
   CONCLUSION=$(echo "$RUNS" | cut -d'|' -f3)
   
   if [[ "$RUN_ID" != "null" && "$RUN_ID" != "" ]]; then
-    echo "✅ Workflow encontrado: ID=$RUN_ID"
+    echo "✅ Workflow encontrado: ID=$RUN_ID (status=$STATUS)"
     break
   fi
   
@@ -91,7 +96,7 @@ ATTEMPTS=0
 MAX_WAIT=3600  # 1 hora de timeout
 
 while [ $ATTEMPTS -lt $MAX_WAIT ]; do
-  RUN_DATA=$(curl -s \
+  RUN_DATA=$(curl -sS \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: Bearer $TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -105,6 +110,11 @@ while [ $ATTEMPTS -lt $MAX_WAIT ]; do
     if [[ "$CONCLUSION" == "success" ]]; then
       echo "✅ Workflow completado exitosamente"
       exit 0
+    elif [[ "$CONCLUSION" == "skipped" ]]; then
+      echo "⚠️ Workflow completado con estado: skipped"
+      echo "   Esto suele pasar cuando la ejecución monitorizada no era la esperada o por condiciones 'if'."
+      echo "   Revisa los jobs en: https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID"
+      exit 1
     else
       echo "❌ Workflow falló: $CONCLUSION"
       exit 1

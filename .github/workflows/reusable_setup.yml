@@ -12,11 +12,11 @@ on:
       params_json:
         required: true
         type: string
-  push:
-    branches:
-      - main
-    paths:
-      - '*'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - '*'
 
 jobs:
   ejecutar-fase-2:

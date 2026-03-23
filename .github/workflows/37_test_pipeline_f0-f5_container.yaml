@@ -1,10 +1,10 @@
 name: Pipeline MLOps - DVC y Fases
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  # push:
+  #   branches: ["main"]
+  # pull_request:
+  #   branches: ["main"]
 
 jobs:
   dvc-data-download:
