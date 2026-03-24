@@ -1,0 +1,284 @@
+name: Pipeline MLOps - DVC Puro (Fases en cadena)
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  fase1:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git y DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: DVC Pull (Datos Raw)
+        run: dvc pull data/raw.csv.dvc
+
+      - name: Verificar datos raw
+        run: |
+          ls -la data
+          wc data/raw.csv
+
+      - name: Ejecutar Fases (Variante, Script, Check)
+        run: |
+          make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+          make script1-run VARIANT=v001
+          make script1-check-results VARIANT=v001
+
+      - name: Publicar Variante (El Makefile hace DVC Push y Git Commit)
+        run: make publish1 VARIANT=v001
+
+      - name: Empujar resultados de F1 a Git
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+
+  fase2:
+    needs: fase1
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 1 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          
+          # CLAVE: Bajar los .dvc que acaba de pushear la Fase 1
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: DVC Pull (Traer datos generados en Fase 1)
+        run: dvc pull executions/01_explore/v001/
+
+      - name: Ejecutar Fases (Variante, Script, Check)
+        run: |
+          make variant2 VARIANT=v011 PARENT=v001 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
+          make script2-run VARIANT=v011
+          make script2-check-results VARIANT=v011
+
+      - name: Publicar Variante (El Makefile hace DVC Push y Git Commit)
+        run: make publish2 VARIANT=v011
+
+      - name: Empujar resultados de F2 a Git
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+
+  fase3:
+    needs: fase2
+    runs-on: [self-hosted, Linux, X64, self-hosted-tehelab]
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 2 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: DVC Pull (Traer datos generados en Fase 2)
+        run: dvc pull executions/02_prepareeventsds/v011/
+
+      - name: Crear variante Fase 3
+        run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard
+
+      - name: Ejecutar script de Fase 3 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1
+        run: |
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          make script3-run VARIANT=v111
+          kill $MONITOR_PID
+
+      - name: Diagnóstico de error (Solo si falla)
+        if: failure()
+        run: |
+          echo "==== BUSCANDO ERRORES DE OUT OF MEMORY (OOM) ===="
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          free -m
+
+      - name: Verificar y Publicar resultados
+        run: |
+          make script3-check-results VARIANT=v111
+          make publish3 VARIANT=v111
+
+      - name: Empujar resultados de F3 a Git
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+
+  fase4:
+    needs: fase3
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 3 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: DVC Pull (Traer datos necesarios para Fase 4)
+        run: |
+          # F4 necesita el catálogo de F2 y los datos de F3
+          dvc pull executions/02_prepareeventsds/v011/ executions/03_preparewindowsds/v111/
+
+      - name: Crear variante Fase 4
+        run: |
+          make variant4 VARIANT=v201 PARENT=v111 PREDICTION_NAME=name OBJECTIVE="{operator: OR, events: [Battery_Active_Power_0_5-to-95_100, Battery_Active_Power_5_15-to-95_100, Battery_Active_Power_15_25-to-95_100, Battery_Active_Power_25_35-to-95_100, Battery_Active_Power_35_65-to-95_100, Battery_Active_Power_65_75-to-95_100, Battery_Active_Power_75_85-to-95_100, Battery_Active_Power_85_95-to-95_100]}"
+
+      - name: Validar objetivo Fase 4 contra catálogo Fase 2
+        run: |
+          python - <<'PY'
+          import json, sys
+          from pathlib import Path
+          import yaml
+
+          catalog_path = Path("executions/02_prepareeventsds/v011/02_prepareeventsds_event_catalog.json")
+          params_path = Path("executions/04_targetengineering/v201/params.yaml")
+
+          if not catalog_path.exists(): sys.exit(1)
+          if not params_path.exists(): sys.exit(1)
+
+          with catalog_path.open("r", encoding="utf-8") as f: catalog = json.load(f)
+          with params_path.open("r", encoding="utf-8") as f: params = yaml.safe_load(f) or {}
+
+          objective = params.get("prediction_objective", {})
+          events = objective.get("events", [])
+          missing = [ev for ev in events if ev not in catalog]
+          if missing:
+            print("[ERROR] Hay eventos del objetivo que no existen en el catálogo F02:")
+            sys.exit(1)
+          print("[OK] Todos los eventos objetivo existen en el catálogo F02.")
+          PY
+
+      - name: Ejecutar script de Fase 4 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1
+        run: |
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          make script4-run VARIANT=v201
+          kill $MONITOR_PID
+
+      - name: Diagnóstico de error (Solo si falla)
+        if: failure()
+        run: |
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          free -m
+
+      - name: Verificar y Publicar resultados
+        run: |
+          make script4-check-results VARIANT=v201
+          make publish4 VARIANT=v201
+
+      - name: Empujar resultados de F4 a Git
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+
+  fase5:
+    needs: fase4
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 4 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: DVC Pull (Traer datos generados en Fase 4)
+        run: dvc pull executions/04_targetengineering/v201/
+
+      - name: Ejecutar Fases (Variante, Script, Check)
+        run: |
+          make variant5 VARIANT=v301 PARENT=v201 MODEL_FAMILY=dense_bow IMBALANCE_STRATEGY=rare_events IMBALANCE_MAX_MAJ=20000
+          make script5-run VARIANT=v301
+          make script5-check-results VARIANT=v301
+
+      - name: Publicar Variante (El Makefile hace DVC Push y Git Commit)
+        run: make publish5 VARIANT=v301
+
+      - name: Empujar resultados de F5 a Git
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
