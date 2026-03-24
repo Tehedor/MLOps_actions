@@ -40,7 +40,7 @@ jobs:
           dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: DVC Pull para obtener los datos
-        run: dvc pull storage data/raw.csv.dvc
+        run: dvc pull data/raw.csv.dvc
 
       - name: Verificar datos
         run: |
