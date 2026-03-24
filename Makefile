@@ -185,7 +185,7 @@ publish-generic: check-variant-format
 	if [ "$$MODE" = "custom" ]; then \
 		CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
 		echo "[INFO] Remote 'publish' detectado: empujando a publish/$$CURRENT_BRANCH"; \
-		git push publish HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
+		git push HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
 	elif [ "$$MODE" = "none" ]; then \
 		echo "[INFO] Setup en modo git.mode=none: commit local únicamente"; \
 	else \
