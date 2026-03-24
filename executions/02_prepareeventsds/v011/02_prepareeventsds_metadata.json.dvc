@@ -1,0 +1,5 @@
+outs:
+- md5: aedfb9a6b8cf3e989314362c91ad529c
+  size: 801
+  hash: md5
+  path: 02_prepareeventsds_metadata.json
