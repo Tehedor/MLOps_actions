@@ -1,94 +1,55 @@
 name: Pipeline MLOps - DVC y Fases
 
 on:
-  # push:
-  #   branches: ["main"]
+  push:
+    branches: ["main"]
   # pull_request:
   #   branches: ["main"]
 
 jobs:
-  dvc-data-download:
+  fase1:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      # credentials:
+        # username: ${{ github.actor }}
+        # password: ${{ secrets.GITHUB_TOKEN }}
     env:
-      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
-      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
-      G_DRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.G_DRIVE_SERVICE_ACCOUNT_JSON }}
-      TOKEN_GDRIVE_JSON: ${{ secrets.TOKEN_GDRIVE_JSON }}
-      TOKEN_GDRIVE_DVC_JSON: ${{ secrets.TOKEN_GDRIVE_DVC_JSON }}
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # <--- ESTO ES LA CLAVE. Descarga el historial completo de Git.
 
-      - name: Configurar DVC remote (GDrive)
-        working-directory: .mlops_tools
-        run: make dvc_setup_fase0
-
-      - name: Descargar datos de DVC
-        working-directory: .mlops_tools
-        run: make dvc_pull_fase0 
+      - name: Configurar variables config.local para dvc
+        run: |
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user Tehedor
+          dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: Verificar que los datos se descargaron
         run: |
           ls -la data
           wc data/raw.csv
 
-      - name: Subir raw.csv como Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: raw-data
-          path: data/
-          retention-days: 1
-
-  fase1:
-    needs: dvc-data-download
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
-
-      - name: Descargar Artifact de datos raw
-        uses: actions/download-artifact@v4
-        with:
-          name: raw-data
-          path: data/
 
       - name: Crear variante Fase 1
         run: make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
-      
-      - name: Subir resultados de la variante
-        uses: actions/upload-artifact@v4
-        with:
-          name: variant-f1v001-variants
-          path: executions/01_explore/variants.yaml 
-          retention-days: 1
-      
+            
       - name: Ejecutar script de Fase 1
         run: make script1-run VARIANT=v001
-
-      - name: Subir ejecución de Fase 1
-        uses: actions/upload-artifact@v4
-        with:
-          name: run-f1v001-results
-          path: executions/01_explore/v001/
-          retention-days: 1
 
       - name: Verificar resultados de Fase 1
         run: make script1-check-results VARIANT=v001
 
+      - name: Subir resultados de la ejecución de Fase 1
+        run: |
+          make publish1 VARIANT=v001
+          git push 
 
   fase2:
     needs: fase1

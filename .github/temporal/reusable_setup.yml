@@ -56,9 +56,9 @@ jobs:
 
       # - name: Configure DVC credentials
       #   run: |
-      #     dvc remote modify origin --local auth basic
-      #     dvc remote modify origin --local user Tehedor
-      #     dvc remote modify origin --local password ${{ secrets.DAGSHUB_TOKEN }}
+      #     dvc remote modify storage --local auth basic
+      #     dvc remote modify storage --local user Tehedor
+      #     dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: Mostrar comandos de setup disponibles
         run: |
