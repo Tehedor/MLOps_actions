@@ -1061,43 +1061,43 @@ with mlflow.start_run() as run:
     run_id = run.info.run_id
     exp_id = exp.experiment_id
 
-	# === REGISTRO EN EL MODEL REGISTRY ===
-	# 1) Priorizar artefactos declarados que apunten a modelos reales
-	model_candidates = []
-	for a in artifacts:
-		p = Path(a)
-		if p.is_file() and p.suffix in {".h5", ".keras"}:
-			model_candidates.append(p)
-		elif p.is_dir():
-			model_candidates.extend(list(p.rglob("*.h5")))
-			model_candidates.extend(list(p.rglob("*.keras")))
+    # === REGISTRO EN EL MODEL REGISTRY ===
+    # 1) Priorizar artefactos declarados que apunten a modelos reales
+    model_candidates = []
+    for a in artifacts:
+        p = Path(a)
+        if p.is_file() and p.suffix in {".h5", ".keras"}:
+            model_candidates.append(p)
+        elif p.is_dir():
+            model_candidates.extend(list(p.rglob("*.h5")))
+            model_candidates.extend(list(p.rglob("*.keras")))
 
-	# 2) Fallback: buscar en executions/.../models/*
-	if not model_candidates and models_dir.exists():
-		model_candidates.extend(list(models_dir.rglob("*.h5")))
-		model_candidates.extend(list(models_dir.rglob("*.keras")))
+    # 2) Fallback: buscar en executions/.../models/*
+    if not model_candidates and models_dir.exists():
+        model_candidates.extend(list(models_dir.rglob("*.h5")))
+        model_candidates.extend(list(models_dir.rglob("*.keras")))
 
-	model_candidates = [p for p in model_candidates if p.exists()]
-	modelo_final_path = model_candidates[0] if model_candidates else None
+    model_candidates = [p for p in model_candidates if p.exists()]
+    modelo_final_path = model_candidates[0] if model_candidates else None
 
-	if modelo_final_path:
-        registry_model_name = "OFP_Anomaly_Detector" 
+    if modelo_final_path:
+        registry_model_name = "OFP_Anomaly_Detector"
         print(f"==> Registrando modelo en MLflow Registry como: {registry_model_name}")
 
-		# Aseguramos una URI estable para registry, independientemente
-		# de cómo se hayan logueado los artefactos en pasos previos.
-		registry_artifact_path = "model_registry_candidate"
-		mlflow.log_artifact(str(modelo_final_path), artifact_path=registry_artifact_path)
-		artifact_name = os.path.basename(str(modelo_final_path))
-		model_uri = f"runs:/{run_id}/{registry_artifact_path}/{artifact_name}"
-        
+        # Aseguramos una URI estable para registry, independientemente
+        # de cómo se hayan logueado los artefactos en pasos previos.
+        registry_artifact_path = "model_registry_candidate"
+        mlflow.log_artifact(str(modelo_final_path), artifact_path=registry_artifact_path)
+        artifact_name = os.path.basename(str(modelo_final_path))
+        model_uri = f"runs:/{run_id}/{registry_artifact_path}/{artifact_name}"
+
         try:
             mlflow.register_model(model_uri=model_uri, name=registry_model_name)
             print("[OK] Modelo registrado en el Model Registry.")
         except Exception as e:
             print(f"[WARN] No se pudo registrar en el Model Registry: {e}")
-	else:
-		print("[WARN] No se detectó ningún modelo (*.h5/*.keras) para registrar en Model Registry.")
+    else:
+        print("[WARN] No se detectó ningún modelo (*.h5/*.keras) para registrar en Model Registry.")
             
 # Guardamos los IDs
 data["mlflow"] = {
