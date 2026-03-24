@@ -21,7 +21,7 @@ jobs:
     with:
       variant_id: v011
       parent_variant: v003
-      params_json: '{"BANDS":"20 40 60","STRATEGY":"transitions","NAN":"discard"}'
+      params_json: '{"BANDS":"20 60 80","STRATEGY":"transitions","NAN":"discard"}'
     secrets: inherit
 
   fase3:
