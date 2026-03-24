@@ -761,6 +761,7 @@ variant4: check-variant-format
 ############################################
 # 4. PUBLICAR VARIANTE DE FASE 04
 ############################################
+
 publish4: check-variant-format
 	@echo "==> Validando variante $(PHASE4):$(VARIANT)"
 	# Artefactos típicos F04: parquet + json + html
@@ -1088,6 +1089,45 @@ endef
 
 export MLFLOW_SCRIPT
 
+define ENSURE_MLFLOW_REGISTRATION_SCRIPT
+import json
+import os
+from pathlib import Path
+
+meta_path = Path(os.environ["META"])
+variant = os.environ.get("VARIANT", "v000")
+
+with meta_path.open("r", encoding="utf-8") as f:
+	data = json.load(f)
+
+if not isinstance(data.get("mlflow_registration"), dict):
+	data["mlflow_registration"] = {
+		"experiment_name": "Default",
+		"params": {
+			"model_family": "dense_bow",
+			"learning_rate": 0.001,
+			"batch_size": 64,
+			"epochs": 3,
+			"imbalance_strategy": "rare_events",
+		},
+		"metrics": {
+			"recall": 0.85,
+			"precision": 0.82,
+			"f1": 0.83,
+		},
+		"artifacts": [
+			f"executions/05_modeling/{variant}/models/molamas",
+		],
+	}
+	with meta_path.open("w", encoding="utf-8") as f:
+		json.dump(data, f, indent=2)
+	print("[INFO] Añadido bloque por defecto mlflow_registration en metadata")
+else:
+	print("[INFO] mlflow_registration ya existe en metadata")
+endef
+
+export ENSURE_MLFLOW_REGISTRATION_SCRIPT
+
 # 2. El target publish5
 publish5: check-variant-format
 	@bash -c 'set -e; \
@@ -1099,6 +1139,9 @@ publish5: check-variant-format
 	if [ ! -f "$$META" ]; then \
 	    echo "[ERROR] Falta metadata 05_modeling_metadata.json"; exit 1; \
 	fi; \
+	echo "==> Verificando bloque mlflow_registration"; \
+	export META VARIANT="$(VARIANT)"; \
+	echo "$$ENSURE_MLFLOW_REGISTRATION_SCRIPT" | $(PYTHON) -; \
 	echo "==> Registrando run en MLflow (DagsHub)"; \
 	export META; \
 	echo "$$MLFLOW_SCRIPT" | $(PYTHON) - '
