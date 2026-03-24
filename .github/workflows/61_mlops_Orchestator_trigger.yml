@@ -47,7 +47,7 @@ jobs:
   trigger-fase1:
     needs: validar-payload
     if: ${{ github.event.client_payload.fase == 'fase1' }}
-    uses: ./.github/workflow/reusable_fase1-Explore.yml
+    uses: ./.github/workflows/reusable_fase1-Explore.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
       params_json: ${{ toJSON(github.event.client_payload.params) }}

@@ -1,0 +1,53 @@
+name: 🚦 API MLOps Orchestrator
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  fase1:
+    uses: ./.github/workflows/reusable_fase1-Explore.yml
+    with:
+      variant_id: v003
+      params_json: '{"RAW":"./data/raw.csv","CLEANING_STRATEGY":"basic","NAN_VALUES":"[-999999]"}'
+    secrets: inherit
+
+  fase2:
+    needs: fase1
+    uses: ./.github/workflows/reusable_fase2-PrepareEvents.yml
+    with:
+      variant_id: v011
+      parent_variant: v003
+      params_json: '{"BANDS":"20 60 80","STRATEGY":"transitions","NAN":"discard"}'
+    secrets: inherit
+
+  fase3:
+    needs: fase2
+    uses: ./.github/workflows/reusable_fase3-PrepareWindows.yml
+    with:
+      variant_id: v111
+      parent_variant: v011
+      params_json: '{"OW":"600","LT":"300","PW":"600","WS":"synchro","NAN":"discard"}'
+    secrets: inherit
+
+  fase4:
+    needs: fase3
+    uses: ./.github/workflows/reusable_fase4-TargetEngineering.yml
+    with:
+      variant_id: v201
+      parent_variant: v111
+      catalog_variant: v011
+      params_json: '{"PREDICTION_NAME":"name","OBJECTIVE":"{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-80_100, Battery_Active_Power_60_80-to-80_100]}"}'
+    secrets: inherit
+
+  fase5:
+    needs: fase4
+    uses: ./.github/workflows/reusable_fase5-Modeling.yml
+    with:
+      variant_id: v301
+      parent_variant: v201
+      params_json: '{"MODEL_FAMILY":"dense_bow","IMBALANCE_STRATEGY":"rare_events","IMBALANCE_MAX_MAJ":"20000"}'
+    secrets: inherit
