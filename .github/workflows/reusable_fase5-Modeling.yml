@@ -1,0 +1,77 @@
+name: "5️⃣♻️ Reusable: Fase 5 (Modeling)"
+
+on:
+  workflow_call:
+    inputs:
+      variant_id:
+        required: true
+        type: string
+      parent_variant:
+        required: true
+        type: string
+      params_json:
+        required: true
+        type: string
+
+jobs:
+  ejecutar-fase-5:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 4 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user "$DAGSHUB_USER"
+          dvc remote modify storage --local password "$DAGSHUB_TOKEN"
+
+      - name: DVC Pull (Traer datos de Fase 4)
+        run: dvc pull executions/04_targetengineering/${{ inputs.parent_variant }}/*.dvc
+
+      - name: Preparar argumentos dinamicos
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shlex
+
+          raw = '''${{ inputs.params_json }}'''.strip()
+          params = json.loads(raw) if raw else {}
+
+          args = []
+          for key, value in params.items():
+              k = str(key).strip()
+              if not k:
+                  continue
+              args.append(f"{k}={shlex.quote(str(value))}")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+              f.write("MAKE_DYNAMIC_ARGS=" + " ".join(args) + "\n")
+          PY
+
+      - name: Ejecutar Fase 5 (Variante, Script, Check)
+        run: |
+          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
+          make variant5 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
+          make script5-run VARIANT=${{ inputs.variant_id }}
+          make script5-check-results VARIANT=${{ inputs.variant_id }}
+
+      - name: Publicar Variante
+        run: make publish5 VARIANT=${{ inputs.variant_id }}
+
+      - name: Empujar resultados de F5 a Git
+        run: git push origin HEAD:main

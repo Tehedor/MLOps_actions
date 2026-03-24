@@ -1,0 +1,133 @@
+name: "4️⃣♻️ Reusable: Fase 4 (Target Engineering)"
+
+on:
+  workflow_call:
+    inputs:
+      variant_id:
+        required: true
+        type: string
+      parent_variant:
+        required: true
+        type: string
+      catalog_variant:
+        required: true
+        type: string
+      params_json:
+        required: true
+        type: string
+
+jobs:
+  ejecutar-fase-4:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 3 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user "$DAGSHUB_USER"
+          dvc remote modify storage --local password "$DAGSHUB_TOKEN"
+
+      - name: DVC Pull (Datos para Fase 4)
+        run: |
+          dvc pull executions/02_prepareeventsds/${{ inputs.catalog_variant }}/*.dvc executions/03_preparewindowsds/${{ inputs.parent_variant }}/*.dvc
+
+      - name: Preparar argumentos dinamicos
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shlex
+
+          raw = '''${{ inputs.params_json }}'''.strip()
+          params = json.loads(raw) if raw else {}
+
+          args = []
+          for key, value in params.items():
+              k = str(key).strip()
+              if not k:
+                  continue
+              args.append(f"{k}={shlex.quote(str(value))}")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+              f.write("MAKE_DYNAMIC_ARGS=" + " ".join(args) + "\n")
+          PY
+
+      - name: Crear variante Fase 4
+        run: |
+          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
+          make variant4 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
+
+      - name: Validar objetivo Fase 4 contra catalogo Fase 2
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          import yaml
+
+          catalog_path = Path("executions/02_prepareeventsds/${{ inputs.catalog_variant }}/02_prepareeventsds_event_catalog.json")
+          params_path = Path("executions/04_targetengineering/${{ inputs.variant_id }}/params.yaml")
+
+          if not catalog_path.exists():
+              print(f"[ERROR] No existe catalogo F02: {catalog_path}")
+              sys.exit(1)
+          if not params_path.exists():
+              print(f"[ERROR] No existe params F04: {params_path}")
+              sys.exit(1)
+
+          with catalog_path.open("r", encoding="utf-8") as f:
+              catalog = json.load(f)
+          with params_path.open("r", encoding="utf-8") as f:
+              params = yaml.safe_load(f) or {}
+
+          objective = params.get("prediction_objective", {})
+          events = objective.get("events", [])
+          missing = [ev for ev in events if ev not in catalog]
+
+          if missing:
+              print("[ERROR] Hay eventos del objetivo que no existen en el catalogo F02:")
+              for ev in missing:
+                  print(f"  - {ev}")
+              sys.exit(1)
+
+          print("[OK] Todos los eventos objetivo existen en el catalogo F02.")
+          PY
+
+      - name: Ejecutar script de Fase 4 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1
+        run: |
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          make script4-run VARIANT=${{ inputs.variant_id }}
+          kill $MONITOR_PID
+
+      - name: Diagnostico de error (Solo si falla)
+        if: failure()
+        run: |
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          free -m
+
+      - name: Verificar y Publicar resultados
+        run: |
+          make script4-check-results VARIANT=${{ inputs.variant_id }}
+          make publish4 VARIANT=${{ inputs.variant_id }}
+
+      - name: Empujar resultados de F4 a Git
+        run: git push origin HEAD:main

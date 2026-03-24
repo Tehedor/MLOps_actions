@@ -1,0 +1,95 @@
+name: 🚦 API MLOps Orchestrator (Trigger)
+
+on:
+  repository_dispatch:
+    types: [ejecutar-fase-api]
+
+permissions:
+  contents: write
+
+jobs:
+  validar-payload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar payload de entrada
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+
+          payload = json.loads('''${{ toJSON(github.event.client_payload) }}''')
+          fase = str(payload.get("fase", "")).strip().lower()
+
+          allowed = {"fase1", "fase2", "fase3", "fase4", "fase5"}
+          if fase not in allowed:
+              print(f"[ERROR] 'fase' invalida: {fase!r}. Usa una de: {sorted(allowed)}")
+              sys.exit(1)
+
+          if not payload.get("variant_id"):
+              print("[ERROR] Falta 'variant_id' en client_payload")
+              sys.exit(1)
+
+          if fase in {"fase2", "fase3", "fase4", "fase5"} and not payload.get("parent_variant"):
+              print(f"[ERROR] En {fase} falta 'parent_variant' en client_payload")
+              sys.exit(1)
+
+          if fase == "fase4" and not payload.get("catalog_variant"):
+              print("[ERROR] En fase4 falta 'catalog_variant' en client_payload")
+              sys.exit(1)
+
+          if "params" not in payload:
+              print("[ERROR] Falta 'params' en client_payload (objeto JSON)")
+              sys.exit(1)
+
+          print("[OK] Payload valido")
+          PY
+
+  trigger-fase1:
+    needs: validar-payload
+    if: ${{ github.event.client_payload.fase == 'fase1' }}
+    uses: ./.github/workflow/reusable_fase1-Explore.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit
+
+  trigger-fase2:
+    needs: validar-payload
+    if: ${{ github.event.client_payload.fase == 'fase2' }}
+    uses: ./.github/workflows/reusable_fase2-PrepareEvents.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      parent_variant: ${{ github.event.client_payload.parent_variant }}
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit
+
+  trigger-fase3:
+    needs: validar-payload
+    if: ${{ github.event.client_payload.fase == 'fase3' }}
+    uses: ./.github/workflows/reusable_fase3-PrepareWindows.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      parent_variant: ${{ github.event.client_payload.parent_variant }}
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit
+
+  trigger-fase4:
+    needs: validar-payload
+    if: ${{ github.event.client_payload.fase == 'fase4' }}
+    uses: ./.github/workflows/reusable_fase4-TargetEngineering.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      parent_variant: ${{ github.event.client_payload.parent_variant }}
+      catalog_variant: ${{ github.event.client_payload.catalog_variant }}
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit
+
+  trigger-fase5:
+    needs: validar-payload
+    if: ${{ github.event.client_payload.fase == 'fase5' }}
+    uses: ./.github/workflows/reusable_fase5-Modeling.yml
+    with:
+      variant_id: ${{ github.event.client_payload.variant_id }}
+      parent_variant: ${{ github.event.client_payload.parent_variant }}
+      params_json: ${{ toJSON(github.event.client_payload.params) }}
+    secrets: inherit

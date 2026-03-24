@@ -1,0 +1,93 @@
+name: "3️⃣♻️ Reusable: Fase 3 (Prepare Windows)"
+
+on:
+  workflow_call:
+    inputs:
+      variant_id:
+        required: true
+        type: string
+      parent_variant:
+        required: true
+        type: string
+      params_json:
+        required: true
+        type: string
+
+jobs:
+  ejecutar-fase-3:
+    runs-on: [self-hosted, Linux, X64, self-hosted-tehelab]
+    container:
+      image: ghcr.io/tehedor/mlops_actions/mlops-env:latest
+    env:
+      USE_VENV: 0
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configurar Git, sincronizar Fase 2 y configurar DVC
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          dvc remote modify storage --local auth basic
+          dvc remote modify storage --local user "$DAGSHUB_USER"
+          dvc remote modify storage --local password "$DAGSHUB_TOKEN"
+
+      - name: DVC Pull (Traer datos de Fase 2)
+        run: dvc pull executions/02_prepareeventsds/${{ inputs.parent_variant }}/*.dvc
+
+      - name: Preparar argumentos dinamicos
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shlex
+
+          raw = '''${{ inputs.params_json }}'''.strip()
+          params = json.loads(raw) if raw else {}
+
+          args = []
+          for key, value in params.items():
+              k = str(key).strip()
+              if not k:
+                  continue
+              args.append(f"{k}={shlex.quote(str(value))}")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+              f.write("MAKE_DYNAMIC_ARGS=" + " ".join(args) + "\n")
+          PY
+
+      - name: Crear variante Fase 3
+        run: |
+          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
+          make variant3 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
+
+      - name: Ejecutar script de Fase 3 (Con monitor de RAM)
+        env:
+          PYTHONFAULTHANDLER: 1
+        run: |
+          (while true; do echo "[$(date '+%H:%M:%S')] RAM Libre:"; free -m | grep Mem; sleep 10; done) &
+          MONITOR_PID=$!
+          make script3-run VARIANT=${{ inputs.variant_id }}
+          kill $MONITOR_PID
+
+      - name: Diagnostico de error (Solo si falla)
+        if: failure()
+        run: |
+          echo "==== BUSCANDO ERRORES DE OUT OF MEMORY (OOM) ===="
+          dmesg -T | grep -i -E "killed|oom|out of memory" || echo "No hay logs de OOM en dmesg."
+          free -m
+
+      - name: Verificar y Publicar resultados
+        run: |
+          make script3-check-results VARIANT=${{ inputs.variant_id }}
+          make publish3 VARIANT=${{ inputs.variant_id }}
+
+      - name: Empujar resultados de F3 a Git
+        run: git push origin HEAD:main
