@@ -70,31 +70,7 @@ jobs:
           PY
 
       - name: Publicar Variante
-              from pathlib import Path
-
-              variant_id = "${{ inputs.variant_id }}"
-              variant_path = Path("executions/01_explore") / variant_id
-
-              print(f"[INFO] Ejecutando con: {' '.join(extra_args)}")
-
-              # Crear variante solo si no existe (idempotente)
-              if not variant_path.exists():
-                print(f"[DEBUG] Variante {variant_id} no existe. Creando...")
-                subprocess.run(
-                  [
-                    "make",
-                    "variant1",
-                    f"VARIANT={variant_id}",
-                    *extra_args,
-                  ],
-                  check=True,
-                )
-              else:
-                print(f"[DEBUG] Variante {variant_id} ya existe. Reutilizando...")
-
-              # Ejecutar scripts (siempre, para actualizar resultados)
-              subprocess.run(["make", "script1-run", f"VARIANT={variant_id}"], check=True)
-              subprocess.run(["make", "script1-check-results", f"VARIANT={variant_id}"], check=True)
+        run: make publish1 VARIANT=${{ inputs.variant_id }}
 
       - name: Empujar resultados de F1 a Git
         run: git push origin HEAD:main
