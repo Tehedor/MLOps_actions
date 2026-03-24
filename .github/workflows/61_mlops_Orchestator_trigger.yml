@@ -20,7 +20,9 @@ jobs:
           payload = json.loads('''${{ toJSON(github.event.client_payload) }}''')
           fase = str(payload.get("fase", "")).strip().lower()
 
-          allowed = {"fase1", "fase2", "fase3", "fase4", "fase5"}
+          # allowed = {"fase1", "fase2", "fase3", "fase4", "fase5"}
+          allowed = {"01_explore", "02_prepareeventsds", "03_preparewindowsds", "04_targetengineering", "05_modeling", "06_packaging", "07_deployrun"}
+
           if fase not in allowed:
               print(f"[ERROR] 'fase' invalida: {fase!r}. Usa una de: {sorted(allowed)}")
               sys.exit(1)
@@ -29,11 +31,13 @@ jobs:
               print("[ERROR] Falta 'variant_id' en client_payload")
               sys.exit(1)
 
-          if fase in {"fase2", "fase3", "fase4", "fase5"} and not payload.get("parent_variant"):
+          # if fase in {"fase2", "fase3", "fase4", "fase5"} and not payload.get("parent_variant"):
+          if fase in {"02_prepareeventsds", "03_preparewindowsds", "04_targetengineering", "05_modeling"} and not payload.get("parent_variant"):
               print(f"[ERROR] En {fase} falta 'parent_variant' en client_payload")
               sys.exit(1)
 
-          if fase == "fase4" and not payload.get("catalog_variant"):
+          # if fase == "fase4" and not payload.get("catalog_variant"):
+          if fase == "04_targetengineering" and not payload.get("catalog_variant"):
               print("[ERROR] En fase4 falta 'catalog_variant' en client_payload")
               sys.exit(1)
 
@@ -46,7 +50,7 @@ jobs:
 
   trigger-fase1:
     needs: validar-payload
-    if: ${{ github.event.client_payload.fase == 'fase1' }}
+    if: ${{ github.event.client_payload.fase == '01_explore' }}
     uses: ./.github/workflows/reusable_fase1-Explore.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
@@ -55,7 +59,7 @@ jobs:
 
   trigger-fase2:
     needs: validar-payload
-    if: ${{ github.event.client_payload.fase == 'fase2' }}
+    if: ${{ github.event.client_payload.fase == '02_prepareeventsds' }}
     uses: ./.github/workflows/reusable_fase2-PrepareEvents.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
@@ -65,7 +69,7 @@ jobs:
 
   trigger-fase3:
     needs: validar-payload
-    if: ${{ github.event.client_payload.fase == 'fase3' }}
+    if: ${{ github.event.client_payload.fase == '03_preparewindowsds' }}
     uses: ./.github/workflows/reusable_fase3-PrepareWindows.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
@@ -75,7 +79,7 @@ jobs:
 
   trigger-fase4:
     needs: validar-payload
-    if: ${{ github.event.client_payload.fase == 'fase4' }}
+    if: ${{ github.event.client_payload.fase == '04_targetengineering' }}
     uses: ./.github/workflows/reusable_fase4-TargetEngineering.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
@@ -86,7 +90,7 @@ jobs:
 
   trigger-fase5:
     needs: validar-payload
-    if: ${{ github.event.client_payload.fase == 'fase5' }}
+    if: ${{ github.event.client_payload.fase == '05_modeling' }}
     uses: ./.github/workflows/reusable_fase5-Modeling.yml
     with:
       variant_id: ${{ github.event.client_payload.variant_id }}
