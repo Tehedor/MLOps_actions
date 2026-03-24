@@ -27,14 +27,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: main
 
       - name: Configurar Git, sincronizar Fase 4 y configurar DVC
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global --add safe.directory '*'
-          git pull origin ${{ github.head_ref || github.ref_name }} --rebase
+          git pull origin main --rebase
           dvc remote modify storage --local auth basic
           dvc remote modify storage --local user "$DAGSHUB_USER"
           dvc remote modify storage --local password "$DAGSHUB_TOKEN"
