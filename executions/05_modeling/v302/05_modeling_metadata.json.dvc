@@ -1,0 +1,5 @@
+outs:
+- md5: f1114d09053be100b4b0e3f3acae7144
+  size: 2517
+  hash: md5
+  path: 05_modeling_metadata.json
