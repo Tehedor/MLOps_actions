@@ -1037,26 +1037,62 @@ with mlflow.start_run() as run:
             if os.path.isdir(a):
                 mlflow.log_artifacts(a)
             else:
-                mlflow.log_artifact(a)
+                # Para archivos individuales como model.h5, log con dirname para preservar estructura
+                if a.endswith("model.h5"):
+                    mlflow.log_artifact(a, artifact_path=os.path.basename(os.path.dirname(a)))
+                else:
+                    mlflow.log_artifact(a)
+        else:
+            print(f"[WARN] Artefacto no existe: {a}")
     
     run_id = run.info.run_id
     exp_id = exp.experiment_id
 
     # === REGISTRO EN EL MODEL REGISTRY ===
-    modelo_final_path = next((a for a in artifacts if "models/molamas" in a), None)
+    # Buscar CUALQUIER model.h5 bajo models/* (sin importar el nombre de la subcarpeta)
+    import glob
+    
+    variant_root = os.path.dirname(meta_path)
+    models_pattern = os.path.join(variant_root, "models", "*", "model.h5")
+    model_files = glob.glob(models_pattern)
+    
+    print(f"[DEBUG] Buscando modelos en patrón: {models_pattern}")
+    print(f"[DEBUG] Modelos encontrados: {model_files}")
+    print(f"[DEBUG] Artefactos definidos: {artifacts}")
+    
+    if model_files:
+        modelo_final_path = model_files[0]  # Tomar el primero si hay múltiples
+        print(f"[DEBUG] Usando modelo: {modelo_final_path}")
+    else:
+        modelo_final_path = None
     
     if modelo_final_path and os.path.exists(modelo_final_path):
         registry_model_name = "OFP_Anomaly_Detector" 
         print(f"==> Registrando modelo en MLflow Registry como: {registry_model_name}")
         
-        artifact_name = os.path.basename(modelo_final_path)
-        model_uri = f"runs:/{run_id}/{artifact_name}"
+        # Construir la ruta relativa desde variant_root preservando estructura models/*/model.h5
+        rel_path = os.path.relpath(modelo_final_path, variant_root)
+        
+        # Intentar primero con path relativo completo
+        model_uri = f"runs:/{run_id}/{rel_path}"
+        print(f"[DEBUG] Intentando model_uri con path relativo: {model_uri}")
         
         try:
             mlflow.register_model(model_uri=model_uri, name=registry_model_name)
             print("[OK] Modelo registrado en el Model Registry.")
         except Exception as e:
-            print(f"[WARN] No se pudo registrar en el Model Registry: {e}")
+            print(f"[WARN] Register falló con path relativo completo: {e}")
+            # Intentar solo con models/*/model.h5
+            model_subdir = os.path.basename(os.path.dirname(modelo_final_path))
+            model_uri_alt = f"runs:/{run_id}/models/{model_subdir}/model.h5"
+            print(f"[DEBUG] Intentando model_uri alternativo: {model_uri_alt}")
+            try:
+                mlflow.register_model(model_uri=model_uri_alt, name=registry_model_name)
+                print("[OK] Modelo registrado en el Model Registry (alternativo).")
+            except Exception as e2:
+                print(f"[ERROR] No se pudo registrar en el Model Registry: {e2}")
+    else:
+        print(f"[ERROR] No se encontró ningún model.h5 bajo models/*/")
             
 # Guardamos los IDs
 data["mlflow"] = {
