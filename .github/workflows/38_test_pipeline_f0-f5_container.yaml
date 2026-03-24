@@ -42,12 +42,12 @@ jobs:
 
       - name: Ejecutar Fases (Variante, Script, Check)
         run: |
-          make variant1 VARIANT=v002 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
-          make script1-run VARIANT=v002
-          make script1-check-results VARIANT=v002
+          make variant1 VARIANT=v003 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+          make script1-run VARIANT=v003
+          make script1-check-results VARIANT=v003
 
       - name: Publicar Variante (El Makefile hace DVC Push y Git Commit)
-        run: make publish1 VARIANT=v002
+        run: make publish1 VARIANT=v003
 
       - name: Empujar resultados de F1 a Git
         run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
@@ -83,11 +83,11 @@ jobs:
           dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: DVC Pull (Traer datos generados en Fase 1)
-        run: dvc pull executions/01_explore/v001/
+        run: dvc pull executions/01_explore/v003/*.dvc
 
       - name: Ejecutar Fases (Variante, Script, Check)
         run: |
-          make variant2 VARIANT=v011 PARENT=v002 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
+          make variant2 VARIANT=v011 PARENT=v003 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
           make script2-run VARIANT=v011
           make script2-check-results VARIANT=v011
 
@@ -126,7 +126,7 @@ jobs:
           dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: DVC Pull (Traer datos generados en Fase 2)
-        run: dvc pull executions/02_prepareeventsds/v011/
+        run: dvc pull executions/02_prepareeventsds/v011/*.dvc
 
       - name: Crear variante Fase 3
         run: make variant3 VARIANT=v111 PARENT=v011 OW=600 LT=300 PW=600 WS=synchro NAN=discard
@@ -186,7 +186,7 @@ jobs:
       - name: DVC Pull (Traer datos necesarios para Fase 4)
         run: |
           # F4 necesita el catálogo de F2 y los datos de F3
-          dvc pull executions/02_prepareeventsds/v011/ executions/03_preparewindowsds/v111/
+          dvc pull executions/02_prepareeventsds/v011/*.dvc executions/03_preparewindowsds/v111/*.dvc
 
       - name: Crear variante Fase 4
         run: |
@@ -269,7 +269,7 @@ jobs:
           dvc remote modify storage --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: DVC Pull (Traer datos generados en Fase 4)
-        run: dvc pull executions/04_targetengineering/v201/
+        run: dvc pull executions/04_targetengineering/v201/*.dvc
 
       - name: Ejecutar Fases (Variante, Script, Check)
         run: |
