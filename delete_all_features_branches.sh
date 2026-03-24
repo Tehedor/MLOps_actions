@@ -1,0 +1,2 @@
+branches=$(git branch -r | sed 's/^ *//' | rg '^origin/feature/' | sed 's#^origin/##'); if [[ -z "$branches" ]]; then echo "No hay ramas origin/feature para borrar."; else echo "Se van a borrar:"; printf '%s
+' "$branches"; git push origin --delete $branches; fi
