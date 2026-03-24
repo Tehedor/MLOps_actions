@@ -42,12 +42,12 @@ jobs:
 
       - name: Ejecutar Fases (Variante, Script, Check)
         run: |
-          make variant1 VARIANT=v001 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
-          make script1-run VARIANT=v001
-          make script1-check-results VARIANT=v001
+          make variant1 VARIANT=v002 RAW=./data/raw.csv CLEANING_STRATEGY=basic NAN_VALUES="[-999999]"
+          make script1-run VARIANT=v002
+          make script1-check-results VARIANT=v002
 
       - name: Publicar Variante (El Makefile hace DVC Push y Git Commit)
-        run: make publish1 VARIANT=v001
+        run: make publish1 VARIANT=v002
 
       - name: Empujar resultados de F1 a Git
         run: git push origin HEAD:${{ github.head_ref || github.ref_name }}
@@ -87,7 +87,7 @@ jobs:
 
       - name: Ejecutar Fases (Variante, Script, Check)
         run: |
-          make variant2 VARIANT=v011 PARENT=v001 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
+          make variant2 VARIANT=v011 PARENT=v002 BANDS="5 15 25 35 65 75 85 95" STRATEGY=transitions NAN=discard
           make script2-run VARIANT=v011
           make script2-check-results VARIANT=v011
 
