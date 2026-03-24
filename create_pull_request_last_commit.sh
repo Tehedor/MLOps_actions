@@ -23,6 +23,14 @@ PR_TITLE="feat: add control file for testing pipeline"
 PR_BODY="This PR adds a control file to validate the pipeline flow."
 CONTROL_FILE="control_file"
 
+ORIGIN_URL="$(git remote get-url origin)"
+if [[ "$ORIGIN_URL" =~ github.com[:/]([^/]+)/([^/.]+)(\.git)?$ ]]; then
+	REPO_SLUG="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+else
+	echo "[ERROR] No se pudo inferir owner/repo desde origin: $ORIGIN_URL"
+	exit 1
+fi
+
 BRANCH="${BRANCH_PREFIX}-$(date +%Y%m%d-%H%M%S)"
 git checkout "$BASE_BRANCH"
 git pull --ff-only origin "$BASE_BRANCH"
@@ -40,13 +48,12 @@ fi
 
 git push -u origin "$BRANCH"
 
-PR_COMPARE_URL="https://github.com/Tehedor/MLOps_actions/compare/${BASE_BRANCH}...${BRANCH}?expand=1"
+PR_COMPARE_URL="https://github.com/${REPO_SLUG}/compare/${BASE_BRANCH}...${BRANCH}?expand=1"
 
-if gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"; then
+if gh pr create --repo "$REPO_SLUG" --base "$BASE_BRANCH" --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"; then
 
 	# Activa el borrado automático de ramas al hacer merge de PRs en este repositorio.
-	REPO="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-	gh api -X PATCH "repos/$REPO" -f delete_branch_on_merge=true >/dev/null
+	gh api -X PATCH "repos/$REPO_SLUG" -f delete_branch_on_merge=true >/dev/null
 	echo "Configurado: GitHub eliminará automáticamente la rama de la PR al hacer merge."
 else
 	echo "[WARN] No se pudo crear la PR automáticamente con gh."
