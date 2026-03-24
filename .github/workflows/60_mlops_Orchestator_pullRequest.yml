@@ -21,7 +21,7 @@ jobs:
     with:
       variant_id: v011
       parent_variant: v003
-      params_json: '{"BANDS":"5 15 25 35 65 75 85 95","STRATEGY":"transitions","NAN":"discard"}'
+      params_json: '{"BANDS":"20 40 60","STRATEGY":"transitions","NAN":"discard"}'
     secrets: inherit
 
   fase3:
@@ -40,7 +40,7 @@ jobs:
       variant_id: v201
       parent_variant: v111
       catalog_variant: v011
-      params_json: '{"PREDICTION_NAME":"name","OBJECTIVE":"{operator: OR, events: [Battery_Active_Power_0_5-to-95_100, Battery_Active_Power_5_15-to-95_100, Battery_Active_Power_15_25-to-95_100, Battery_Active_Power_25_35-to-95_100, Battery_Active_Power_35_65-to-95_100, Battery_Active_Power_65_75-to-95_100, Battery_Active_Power_75_85-to-95_100, Battery_Active_Power_85_95-to-95_100]}"}'
+      params_json: '{"PREDICTION_NAME":"name","OBJECTIVE":"{operator: OR, events: [Battery_Active_Power_0_20-to-80_100, Battery_Active_Power_20_60-to-80_100, Battery_Active_Power_60_80-to-80_100]}"}'
     secrets: inherit
 
   fase5:
