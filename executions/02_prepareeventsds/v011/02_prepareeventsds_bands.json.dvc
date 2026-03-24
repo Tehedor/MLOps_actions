@@ -1,0 +1,5 @@
+outs:
+- md5: 0e65fac6a3d1fae0dc67ea3125e9778f
+  size: 6444
+  hash: md5
+  path: 02_prepareeventsds_bands.json
