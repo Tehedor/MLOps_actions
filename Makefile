@@ -180,17 +180,8 @@ publish-generic: check-variant-format
 		echo "[ERROR] Remote DVC 'storage' no configurado. Ejecuta 'make setup' o contacta con el admin"; exit 1; \
 	fi
 
-	# Determinamos modo publish
-	@MODE=$$($(PYTHON) -c "import yaml,pathlib;cfg=pathlib.Path('.mlops4ofp/setup.yaml');print('error' if not cfg.exists() else yaml.safe_load(cfg.read_text()).get('git',{}).get('mode','none'))"); \
-	if [ "$$MODE" = "custom" ]; then \
-		CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
-		echo "[INFO] Remote 'publish' detectado: empujando a publish/$$CURRENT_BRANCH"; \
-		git push HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
-	elif [ "$$MODE" = "none" ]; then \
-		echo "[INFO] Setup en modo git.mode=none: commit local únicamente"; \
-	else \
-		echo "[ERROR] Remote 'publish' no configurado y setup no en modo 'none'."; exit 1; \
-	fi
+	@echo "==> Push Git"
+	@git push || echo "[WARN] git push failed"
 
 	@echo "==> Push DVC"
 # 	@$(DVC) push -r storage || (echo "[ERROR] dvc push failed"; exit 1)
@@ -221,15 +212,8 @@ remove-generic: check-variant-format
 
 	@git commit -m "remove variant: $(PHASE) $(VARIANT)" || true
 
-	@MODE=$$($(PYTHON) -c "import yaml,pathlib;cfg=pathlib.Path('.mlops4ofp/setup.yaml');print('error' if not cfg.exists() else yaml.safe_load(cfg.read_text()).get('git',{}).get('mode','none'))"); \
-	if [ "$$MODE" = "custom" ]; then \
-		CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
-		git push publish HEAD:$$CURRENT_BRANCH || echo "[WARN] git push publish failed"; \
-	elif [ "$$MODE" = "none" ]; then \
-		echo "[INFO] Setup en modo git.mode=none: commit local únicamente"; \
-	else \
-		echo "[ERROR] Setup inválido o no configurado."; exit 1; \
-	fi
+	@echo "==> Push Git"
+	@git push || echo "[WARN] git push failed"
 
 	@echo "==> Push DVC para propagar eliminación"
 	@$(DVC) push -r storage || echo "[WARN] dvc push failed"

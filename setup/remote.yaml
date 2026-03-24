@@ -4,17 +4,17 @@
 git:
   mode: custom
   # URL del repositorio remoto donde publicar (SSH o HTTPS)
-  remote_url: "git@github.com:Tehedor/mlops4ofp-tehedor-test.git"
+  remote_url: "git@github.com:Tehedor/MLOps_actions.git"
 
 dvc:
   backend: dagshub
   # Formato esperado por setup.py: <owner>/<repo>
-  repo: "Tehedor/mlops4ofp-tehedor-test"
+  repo: "Tehedor/MLOps_actions"
 
 mlflow:
   enabled: true
   backend: dagshub
-  tracking_uri: "https://dagshub.com/Tehedor/mlops4ofp-tehedor-test.mlflow"
+  tracking_uri: "https://dagshub.com/Tehedor/MLOps_actions.mlflow"
 
 auth:
   # Variables de entorno requeridas por setup.py para backend dagshub

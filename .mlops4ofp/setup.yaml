@@ -3,15 +3,15 @@ auth:
   dagshub_user_env: DAGSHUB_USER
 dvc:
   backend: dagshub
-  repo: Tehedor/mlops4ofp-tehedor-test
+  repo: Tehedor/MLOps_actions
 git:
   mode: custom
   publish_remote_name: publish
-  remote_url: git@github.com:Tehedor/mlops4ofp-tehedor-test.git
+  remote_url: git@github.com:Tehedor/MLOps_actions.git
 mlflow:
   backend: dagshub
   enabled: true
-  tracking_uri: https://dagshub.com/Tehedor/mlops4ofp-tehedor-test.mlflow
+  tracking_uri: https://dagshub.com/Tehedor/MLOps_actions.mlflow
 notes: '- Exporta DAGSHUB_USER y DAGSHUB_TOKEN antes de make setup.
 
   - Ejecuta: make clean-setup && make setup SETUP_CFG=setup/remote.yaml && make check-setup.
