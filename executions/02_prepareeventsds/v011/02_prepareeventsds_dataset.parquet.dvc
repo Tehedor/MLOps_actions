@@ -1,5 +1,0 @@
-outs:
-- md5: a7dc60c231f0f560b9c1c2f09ba3bcc1
-  size: 17162182
-  hash: md5
-  path: 02_prepareeventsds_dataset.parquet
