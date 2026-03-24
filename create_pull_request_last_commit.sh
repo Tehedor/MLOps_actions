@@ -1,6 +1,39 @@
-git checkout -b feature/fase1-mejoras
-touch control_file
-git add control_file
-git commit -m "feat: add control file for testing pipeline"
-git push origin feature/fase1-mejoras
-gh pr create --title "feat: add control file for testing pipeline" --body "This
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRANCH_PREFIX="feature/fase1-mejoras"
+BASE_BRANCH="main"
+PR_TITLE="feat: add control file for testing pipeline"
+PR_BODY="This PR adds a control file to validate the pipeline flow."
+CONTROL_FILE="control_file"
+
+cleanup() {
+	rm -f "$CONTROL_FILE"
+	echo "Limpieza local: $CONTROL_FILE eliminado."
+}
+trap cleanup EXIT
+
+BRANCH="${BRANCH_PREFIX}-$(date +%Y%m%d-%H%M%S)"
+git checkout "$BASE_BRANCH"
+git pull --ff-only origin "$BASE_BRANCH"
+git checkout -b "$BRANCH"
+
+RANDOM_VALUE="$(date +%s)-$RANDOM-$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+printf "run_id=%s\n" "$RANDOM_VALUE" > "$CONTROL_FILE"
+git add "$CONTROL_FILE"
+
+if git diff --cached --quiet; then
+	echo "No hay cambios para commitear."
+else
+	git commit -m "$PR_TITLE"
+fi
+
+git push -u origin "$BRANCH"
+gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"
+
+# Activa el borrado automático de ramas al hacer merge de PRs en este repositorio.
+REPO="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
+gh api -X PATCH "repos/$REPO" -f delete_branch_on_merge=true >/dev/null
+echo "Configurado: GitHub eliminará automáticamente la rama de la PR al hacer merge."
+
+git checkout "$BASE_BRANCH"
