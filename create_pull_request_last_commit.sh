@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Carga variables desde .env si existe (sin imprimir secretos).
+if [[ -f .env ]]; then
+	# shellcheck disable=SC1091
+	set -a
+	source .env
+	set +a
+fi
+
+# Prioriza token explícito para GitHub CLI en modo no interactivo.
+if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_ACTIONS_TOKEN:-}" ]]; then
+	export GH_TOKEN="$GITHUB_ACTIONS_TOKEN"
+fi
+if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+	export GH_TOKEN="$GITHUB_TOKEN"
+fi
+
 BRANCH_PREFIX="feature/fase1-mejoras"
 BASE_BRANCH="main"
 PR_TITLE="feat: add control file for testing pipeline"
@@ -26,17 +42,17 @@ git push -u origin "$BRANCH"
 
 PR_COMPARE_URL="https://github.com/Tehedor/MLOps_actions/compare/${BASE_BRANCH}...${BRANCH}?expand=1"
 
-if gh auth status >/dev/null 2>&1; then
-	gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"
+if gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$PR_TITLE" --body "$PR_BODY"; then
 
 	# Activa el borrado automático de ramas al hacer merge de PRs en este repositorio.
 	REPO="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 	gh api -X PATCH "repos/$REPO" -f delete_branch_on_merge=true >/dev/null
 	echo "Configurado: GitHub eliminará automáticamente la rama de la PR al hacer merge."
 else
-	echo "[WARN] gh no está autenticado."
+	echo "[WARN] No se pudo crear la PR automáticamente con gh."
+	echo "[INFO] Verifica token en .env (GH_TOKEN o GITHUB_ACTIONS_TOKEN) y permisos de PR."
 	echo "[INFO] Crea la PR manualmente aquí: $PR_COMPARE_URL"
-	echo "[INFO] Para dejarlo 100% automático en próximas ejecuciones: gh auth login"
+	echo "[INFO] Alternativa interactiva: gh auth login"
 fi
 
 git checkout "$BASE_BRANCH"
