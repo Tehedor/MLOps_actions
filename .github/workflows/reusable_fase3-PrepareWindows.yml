@@ -42,31 +42,34 @@ jobs:
       - name: DVC Pull (Traer datos de Fase 2)
         run: dvc pull executions/02_prepareeventsds/${{ inputs.parent_variant }}/*.dvc
 
-      - name: Preparar argumentos dinamicos
+      - name: Crear variante Fase 3
         run: |
           python - <<'PY'
           import json
-          import os
-          import shlex
+          import subprocess
 
           raw = '''${{ inputs.params_json }}'''.strip()
           params = json.loads(raw) if raw else {}
 
-          args = []
+          extra_args = []
           for key, value in params.items():
-              k = str(key).strip()
-              if not k:
-                  continue
-              args.append(f"{k}={shlex.quote(str(value))}")
+            k = str(key).strip()
+            if not k:
+              continue
+            extra_args.append(f"{k}={value}")
 
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
-              f.write("MAKE_DYNAMIC_ARGS=" + " ".join(args) + "\n")
-          PY
+          print("Ejecutando con:", " ".join(extra_args))
 
-      - name: Crear variante Fase 3
-        run: |
-          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
-          make variant3 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
+          subprocess.run(
+            [
+              "make",
+              "variant3",
+              "VARIANT=${{ inputs.variant_id }}",
+              "PARENT=${{ inputs.parent_variant }}",
+              *extra_args,
+            ],
+            check=True,
+          )
 
       - name: Ejecutar script de Fase 3 (Con monitor de RAM)
         env:

@@ -42,33 +42,37 @@ jobs:
       - name: DVC Pull (Traer datos de Fase 4)
         run: dvc pull executions/04_targetengineering/${{ inputs.parent_variant }}/*.dvc
 
-      - name: Preparar argumentos dinamicos
+      - name: Ejecutar Fase 5 (Variante, Script, Check)
         run: |
           python - <<'PY'
           import json
-          import os
-          import shlex
+          import subprocess
 
           raw = '''${{ inputs.params_json }}'''.strip()
           params = json.loads(raw) if raw else {}
 
-          args = []
+          extra_args = []
           for key, value in params.items():
-              k = str(key).strip()
-              if not k:
-                  continue
-              args.append(f"{k}={shlex.quote(str(value))}")
+            k = str(key).strip()
+            if not k:
+              continue
+            extra_args.append(f"{k}={value}")
 
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
-              f.write("MAKE_DYNAMIC_ARGS=" + " ".join(args) + "\n")
+          print("Ejecutando con:", " ".join(extra_args))
+
+          subprocess.run(
+            [
+              "make",
+              "variant5",
+              "VARIANT=${{ inputs.variant_id }}",
+              "PARENT=${{ inputs.parent_variant }}",
+              *extra_args,
+            ],
+            check=True,
+          )
+          subprocess.run(["make", "script5-run", "VARIANT=${{ inputs.variant_id }}"], check=True)
+          subprocess.run(["make", "script5-check-results", "VARIANT=${{ inputs.variant_id }}"], check=True)
           PY
-
-      - name: Ejecutar Fase 5 (Variante, Script, Check)
-        run: |
-          echo "Ejecutando con: $MAKE_DYNAMIC_ARGS"
-          make variant5 VARIANT=${{ inputs.variant_id }} PARENT=${{ inputs.parent_variant }} $MAKE_DYNAMIC_ARGS
-          make script5-run VARIANT=${{ inputs.variant_id }}
-          make script5-check-results VARIANT=${{ inputs.variant_id }}
 
       - name: Publicar Variante
         run: make publish5 VARIANT=${{ inputs.variant_id }}
